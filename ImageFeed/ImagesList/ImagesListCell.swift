@@ -13,7 +13,6 @@ final class ImagesListCell: UITableViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        likeButton.setTitle("", for: .normal)
         setupGradient()
     }
     
