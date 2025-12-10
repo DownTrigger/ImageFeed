@@ -1,10 +1,3 @@
-//
-//  SingleImageViewController.swift
-//  ImageFeed
-//
-//  Created by Андрей Рузавин on 9/11/25.
-//
-
 import UIKit
 
 final class SingleImageViewController: UIViewController {
@@ -37,10 +30,13 @@ final class SingleImageViewController: UIViewController {
         super.viewDidLayoutSubviews()
         guard let image = imageView.image else { return }
         updateMinZoomScale(for: image)
-        centerImage()
     }
     
     // MARK: Actions
+    
+    @IBAction func didTapLikeButton(_ sender: UIButton) {
+       print("like")
+    }
     
     @IBAction func didTapBackButton() {
         dismiss(animated: true, completion: nil)
@@ -57,21 +53,29 @@ final class SingleImageViewController: UIViewController {
     private func updateMinZoomScale(for image: UIImage) {
         let widthScale = scrollView.bounds.width / image.size.width
         let heightScale = scrollView.bounds.height / image.size.height
-        let minScale = min(widthScale, heightScale)
+        let scale = max(widthScale, heightScale)
         
-        scrollView.minimumZoomScale = minScale
-        scrollView.maximumZoomScale = minScale * 3
-        scrollView.zoomScale = minScale
+        scrollView.minimumZoomScale = scale
+        scrollView.maximumZoomScale = scale * 3
+        scrollView.zoomScale = scale
+        
+        centerImage()
     }
     
     private func centerImage() {
-        let scrollSize = scrollView.bounds.size
-        let imageSize = imageView.frame.size
-        
-        let verticalInset = max(0, (scrollSize.height - imageSize.height) / 2)
-        let horizontalInset = max(0, (scrollSize.width - imageSize.width) / 2)
-        
-        scrollView.contentInset = UIEdgeInsets(top: verticalInset, left: horizontalInset, bottom: verticalInset, right: horizontalInset)
+        guard let image = imageView.image else { return }
+
+        let scrollViewSize = scrollView.bounds.size
+        let imageSize = CGSize(
+            width: image.size.width * scrollView.zoomScale,
+            height: image.size.height * scrollView.zoomScale
+        )
+
+        let horizontalOffset = max(0, (imageSize.width - scrollViewSize.width) / 2)
+        let verticalOffset = max(0, (imageSize.height - scrollViewSize.height) / 2)
+
+        scrollView.contentInset = .zero
+        scrollView.contentOffset = CGPoint(x: horizontalOffset, y: verticalOffset)
     }
 }
 
@@ -81,9 +85,5 @@ extension SingleImageViewController: UIScrollViewDelegate {
     
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         imageView
-    }
-    
-    func scrollViewDidZoom(_ scrollView: UIScrollView) {
-        centerImage()
     }
 }
