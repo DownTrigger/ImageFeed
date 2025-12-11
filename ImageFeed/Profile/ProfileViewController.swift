@@ -1,16 +1,23 @@
 import UIKit
 
-class ProfileViewController: UIViewController {
+final class ProfileViewController: UIViewController {
     
     // MARK: - UI Elements
     private var profileImageView: UIImageView!
     private var logoutButton: UIButton!
     private var nameLabel: UILabel!
-    private var loginNameLabel: UILabel!
+    private var loginLabel: UILabel!
     private var descriptionLabel: UILabel!
     private var favoritesLabel: UILabel!
     private var favoritesValueLabel: UILabel!
     private var favoritesTableView: UITableView!
+    
+    // MARK: - Constants
+    private let userName = "Екатерина Новикова"
+    private let userLogin = "@ekaterina_nov"
+    private let descriptionText = "Hello, world!"
+    private let favoritesTitle = "Избранное"
+    private let favoritesValue = "27"
     
     // MARK: - Properties
     private let photosName: [String] = Array(0..<20).map{ "\($0)" }
@@ -67,7 +74,7 @@ class ProfileViewController: UIViewController {
     
     func setupNameLabel() {
         nameLabel = UILabel()
-        nameLabel.text = "Екатерина Новикова"
+        nameLabel.text = userName
         nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
         nameLabel.textColor = UIColor(named: "YP White")
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -80,36 +87,36 @@ class ProfileViewController: UIViewController {
     }
     
     func setupLoginNameLabel() {
-        loginNameLabel = UILabel()
-        loginNameLabel.text = "@ekaterina_nov"
-        loginNameLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        loginNameLabel.textColor = UIColor(named: "YP Gray")
-        loginNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(loginNameLabel)
+        loginLabel = UILabel()
+        loginLabel.text = userLogin
+        loginLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
+        loginLabel.textColor = UIColor(named: "YP Gray")
+        loginLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(loginLabel)
         
         NSLayoutConstraint.activate([
-            loginNameLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
-            loginNameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
+            loginLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
+            loginLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
         ])
     }
     
     func setupDescriptionLabel() {
         descriptionLabel = UILabel()
-        descriptionLabel.text = "Hello, world!"
+        descriptionLabel.text = descriptionText
         descriptionLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         descriptionLabel.textColor = UIColor(named: "YP White")
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(descriptionLabel)
         
         NSLayoutConstraint.activate([
-            descriptionLabel.topAnchor.constraint(equalTo: loginNameLabel.bottomAnchor, constant: 8),
+            descriptionLabel.topAnchor.constraint(equalTo: loginLabel.bottomAnchor, constant: 8),
             descriptionLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
         ])
     }
     
     func setupFavorites() {
         favoritesLabel = UILabel()
-        favoritesLabel.text = "Избранное"
+        favoritesLabel.text = favoritesTitle
         favoritesLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
         favoritesLabel.textColor = UIColor(named: "YP White")
         favoritesLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -123,7 +130,7 @@ class ProfileViewController: UIViewController {
     
     func setupFavoritesValue() {
         favoritesValueLabel = UILabel()
-        favoritesValueLabel.text = "27"
+        favoritesValueLabel.text = favoritesValue
         favoritesValueLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         favoritesValueLabel.textColor = UIColor(named: "YP White")
         favoritesValueLabel.backgroundColor = UIColor(named: "YP Blue")
@@ -168,7 +175,7 @@ class ProfileViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension ProfileViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return photosName.count
+        photosName.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -203,7 +210,7 @@ extension ProfileViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         
-        guard let singleImageVC = storyboard.instantiateViewController(withIdentifier: "SingleImageViewController") as? SingleImageViewController else {
+        guard let singleImageVC = storyboard.instantiateViewController(withIdentifier: SingleImageViewController.reuseIdentifier) as? SingleImageViewController else {
             return
         }
         
@@ -221,6 +228,12 @@ extension ProfileViewController: UITableViewDelegate {
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let imageViewWidth = view.frame.width - imageInsets.left - imageInsets.right
         let imageWidth = image.size.width
+        
+        guard imageWidth > 0 else {
+            print("Image width is zero")
+            return 0
+        }
+        
         let scale = imageViewWidth / imageWidth
         let cellHeight = image.size.height * scale + imageInsets.top + imageInsets.bottom
         return cellHeight
