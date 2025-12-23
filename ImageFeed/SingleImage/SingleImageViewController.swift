@@ -38,7 +38,7 @@ final class SingleImageViewController: UIViewController {
     // MARK: Actions
     
     @IBAction func didTapLikeButton(_ sender: UIButton) {
-       print("like")
+        print("like")
     }
     
     @IBAction func didTapBackButton() {
@@ -67,16 +67,16 @@ final class SingleImageViewController: UIViewController {
     
     private func centerImage() {
         guard let image = imageView.image else { return }
-
+        
         let scrollViewSize = scrollView.bounds.size
         let imageSize = CGSize(
             width: image.size.width * scrollView.zoomScale,
             height: image.size.height * scrollView.zoomScale
         )
-
+        
         let horizontalOffset = max(0, (imageSize.width - scrollViewSize.width) / 2)
         let verticalOffset = max(0, (imageSize.height - scrollViewSize.height) / 2)
-
+        
         scrollView.contentInset = .zero
         scrollView.contentOffset = CGPoint(x: horizontalOffset, y: verticalOffset)
     }

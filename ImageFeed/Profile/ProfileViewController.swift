@@ -184,7 +184,7 @@ extension ProfileViewController: UITableViewDataSource {
         guard let ProfileCell = cell as? ProfileCell else {
             return UITableViewCell()
         }
-
+        
         configCell(for: ProfileCell, with: indexPath)
         return ProfileCell
     }
