@@ -37,7 +37,7 @@ class ProfileViewController: UIViewController {
     
     // MARK: - UI Setup
     func setupProfileImageView() {
-        let profileImage = UIImage(named: "avatar")
+        let profileImage = UIImage(resource: .userProfile)
         profileImageView = UIImageView(image: profileImage)
         profileImageView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(profileImageView)
@@ -51,9 +51,9 @@ class ProfileViewController: UIViewController {
     }
     
     func setupLogoutButton() {
-        let buttonImage = UIImage(named: "ipad.and.arrow.forward")
-        logoutButton = UIButton.systemButton(with: buttonImage!, target: self, action: #selector(didTapLogoutButton))
-        logoutButton.tintColor = UIColor(named: "YP Red")
+        let buttonImage = UIImage(resource: .iconLogout)
+        logoutButton = UIButton.systemButton(with: buttonImage, target: self, action: #selector(didTapLogoutButton))
+        logoutButton.tintColor = UIColor(resource: .ypRed)
         logoutButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(logoutButton)
         
@@ -69,7 +69,7 @@ class ProfileViewController: UIViewController {
         nameLabel = UILabel()
         nameLabel.text = "Екатерина Новикова"
         nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
-        nameLabel.textColor = UIColor(named: "YP White")
+        nameLabel.textColor = UIColor(resource: .ypWhite)
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(nameLabel)
         
@@ -83,7 +83,7 @@ class ProfileViewController: UIViewController {
         loginNameLabel = UILabel()
         loginNameLabel.text = "@ekaterina_nov"
         loginNameLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        loginNameLabel.textColor = UIColor(named: "YP Gray")
+        loginNameLabel.textColor = UIColor(resource: .ypGray)
         loginNameLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(loginNameLabel)
         
@@ -97,7 +97,7 @@ class ProfileViewController: UIViewController {
         descriptionLabel = UILabel()
         descriptionLabel.text = "Hello, world!"
         descriptionLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        descriptionLabel.textColor = UIColor(named: "YP White")
+        descriptionLabel.textColor = UIColor(resource: .ypWhite)
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(descriptionLabel)
         
@@ -111,7 +111,7 @@ class ProfileViewController: UIViewController {
         favoritesLabel = UILabel()
         favoritesLabel.text = "Избранное"
         favoritesLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
-        favoritesLabel.textColor = UIColor(named: "YP White")
+        favoritesLabel.textColor = UIColor(resource: .ypWhite)
         favoritesLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(favoritesLabel)
         
@@ -125,8 +125,8 @@ class ProfileViewController: UIViewController {
         favoritesValueLabel = UILabel()
         favoritesValueLabel.text = "27"
         favoritesValueLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        favoritesValueLabel.textColor = UIColor(named: "YP White")
-        favoritesValueLabel.backgroundColor = UIColor(named: "YP Blue")
+        favoritesValueLabel.textColor = UIColor(resource: .ypWhite)
+        favoritesValueLabel.backgroundColor = UIColor(resource: .ypBlue)
         favoritesValueLabel.textAlignment = .center
         favoritesValueLabel.translatesAutoresizingMaskIntoConstraints = false
         favoritesValueLabel.layer.cornerRadius = 12
@@ -148,7 +148,7 @@ class ProfileViewController: UIViewController {
         favoritesTableView.register(ProfileCell.self, forCellReuseIdentifier: ProfileCell.reuseIdentifier)
         favoritesTableView.delegate = self
         favoritesTableView.dataSource = self
-        favoritesTableView.backgroundColor = UIColor(named: "YP Black")
+        favoritesTableView.backgroundColor = UIColor(resource: .ypBlack)
         favoritesTableView.separatorStyle = .none
         
         NSLayoutConstraint.activate([
@@ -193,7 +193,7 @@ extension ProfileViewController {
         cell.cellImage.image = image
         cell.dateLabel.text = dateFormatter.string(from: Date())
         
-        let likeImage = UIImage(named: "like_button_on")
+        let likeImage = UIImage(resource: .iconLikeFilled)
         cell.likeButton.setImage(likeImage, for: .normal)
     }
 }

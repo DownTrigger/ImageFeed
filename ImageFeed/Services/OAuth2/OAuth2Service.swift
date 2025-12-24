@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 
 final class OAuth2Service {
     
@@ -9,9 +10,16 @@ final class OAuth2Service {
     // MARK: - Dependencies
     private let tokenStorage = OAuth2TokenStorage.shared
     
+    // MARK: - Decoder
+    private let decoder = JSONDecoder()
+    
+    // MARK: - Logger
+    private let logger = Logger(label: "OAuth2Service")
+    
     // MARK: Public API
     func fetchAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let request = makeOAuthTokenRequest(code: code) else {
+            self.logger.error("Failed to build OAuth token request")
             DispatchQueue.main.async {
                 completion(.failure(NetworkError.invalidRequest))
             }
@@ -21,7 +29,7 @@ final class OAuth2Service {
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             
             if let error = error {
-                print("Network error:", error)
+                self.logger.error("Network error while fetching OAuth token: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
@@ -32,6 +40,7 @@ final class OAuth2Service {
                 let response = response as? HTTPURLResponse,
                 let data = data
             else {
+                self.logger.error("Invalid response or missing data while fetching OAuth token")
                 DispatchQueue.main.async {
                     completion(.failure(NetworkError.urlSessionError))
                 }
@@ -39,7 +48,7 @@ final class OAuth2Service {
             }
             
             guard (200...299).contains(response.statusCode) else {
-                print("HTTP error, statusCode =", response.statusCode)
+                self.logger.error("HTTP error while fetching OAuth token, status code: \(response.statusCode)")
                 DispatchQueue.main.async {
                     completion(.failure(NetworkError.httpStatusCode(response.statusCode)))
                 }
@@ -47,14 +56,15 @@ final class OAuth2Service {
             }
             
             do {
-                let decoded = try JSONDecoder().decode(OAuth2TokenResponseBody.self, from: data)
+                let decoded = try self.decoder.decode(OAuth2TokenResponseBody.self, from: data)
                 let token = decoded.accessToken
                 self.tokenStorage.token = token
+                
                 DispatchQueue.main.async {
                     completion(.success(token))
                 }
             } catch {
-                print("Decoding error:", error)
+                self.logger.error("Failed to decode OAuth token response: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
@@ -67,7 +77,7 @@ final class OAuth2Service {
     // MARK: Private helpers
     private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard var components = URLComponents(string: "https://unsplash.com/oauth/token") else {
-            print("Failed to create URLComponents")
+            self.logger.error("Failed to create URLComponents")
             return nil
         }
         
@@ -80,12 +90,12 @@ final class OAuth2Service {
         ]
         
         guard let url = components.url else {
-            print("Failed to get URL from URLComponents")
+            self.logger.error("Failed to get URL from URLComponents")
             return nil
         }
         
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = HTTPMethod.post.rawValue
         return request
     }
 }

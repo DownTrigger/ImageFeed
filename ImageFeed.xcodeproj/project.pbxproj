@@ -6,8 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		344BBDE42EFB590D00E9A5EC /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 344BBDE32EFB590D00E9A5EC /* WebKit.framework */; };
+		34DB251F2EFB745B00A1DE59 /* InMemoryLogging in Frameworks */ = {isa = PBXBuildFile; productRef = 34DB251E2EFB745B00A1DE59 /* InMemoryLogging */; };
+		34DB25212EFB745B00A1DE59 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 34DB25202EFB745B00A1DE59 /* Logging */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		341E5E462EB3631B00D81CA0 /* ImageFeed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageFeed.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		344BBDE32EFB590D00E9A5EC /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -36,6 +43,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34DB25212EFB745B00A1DE59 /* Logging in Frameworks */,
+				34DB251F2EFB745B00A1DE59 /* InMemoryLogging in Frameworks */,
+				344BBDE42EFB590D00E9A5EC /* WebKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -46,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				341E5E482EB3631B00D81CA0 /* ImageFeed */,
+				344BBDE22EFB590D00E9A5EC /* Frameworks */,
 				341E5E472EB3631B00D81CA0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +67,14 @@
 				341E5E462EB3631B00D81CA0 /* ImageFeed.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		344BBDE22EFB590D00E9A5EC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				344BBDE32EFB590D00E9A5EC /* WebKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -78,6 +97,8 @@
 			);
 			name = ImageFeed;
 			packageProductDependencies = (
+				34DB251E2EFB745B00A1DE59 /* InMemoryLogging */,
+				34DB25202EFB745B00A1DE59 /* Logging */,
 			);
 			productName = ImageFeed;
 			productReference = 341E5E462EB3631B00D81CA0 /* ImageFeed.app */;
@@ -107,6 +128,9 @@
 			);
 			mainGroup = 341E5E3D2EB3631B00D81CA0;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				34DB251D2EFB745B00A1DE59 /* XCRemoteSwiftPackageReference "swift-log" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 341E5E472EB3631B00D81CA0 /* Products */;
 			projectDirPath = "";
@@ -341,6 +365,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		34DB251D2EFB745B00A1DE59 /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		34DB251E2EFB745B00A1DE59 /* InMemoryLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 34DB251D2EFB745B00A1DE59 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = InMemoryLogging;
+		};
+		34DB25202EFB745B00A1DE59 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 34DB251D2EFB745B00A1DE59 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 341E5E3E2EB3631B00D81CA0 /* Project object */;
 }

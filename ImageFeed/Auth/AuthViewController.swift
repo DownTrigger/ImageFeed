@@ -59,14 +59,14 @@ extension AuthViewController {
     
     private func fetchOAuthToken(_ code: String) {
         oauth2Service.fetchAuthToken(code) { [weak self] result in
-            guard let self = self else { return }
+            guard let self else { return }
             
             switch result {
             case .success:
                 self.switchToMainScreen()
             case .failure:
-                print("AuthViewController: OAuth token fetch failed:")
-                // TODO бработка ошибки
+                print("OAuth token fetch failed:")
+                // TODO обработка ошибки
                 break
             }
         }
@@ -118,10 +118,10 @@ extension AuthViewController {
 extension AuthViewController {
     
     private func configureBackButton() {
-        navigationController?.navigationBar.backIndicatorImage = UIImage(named: "nav_back_button")
-        navigationController?.navigationBar.backIndicatorTransitionMaskImage = UIImage(named: "nav_back_button")
+        navigationController?.navigationBar.backIndicatorImage = UIImage(resource: .iconBackChevronWV)
+        navigationController?.navigationBar.backIndicatorTransitionMaskImage = UIImage(resource: .iconBackChevronWV)
         navigationItem.backBarButtonItem = UIBarButtonItem( title: "", style: .plain, target: nil, action: nil)
-        navigationItem.backBarButtonItem?.tintColor = UIColor(named: "YP Black")
+        navigationItem.backBarButtonItem?.tintColor = UIColor(resource: .ypBlack)
     }
     
 }
