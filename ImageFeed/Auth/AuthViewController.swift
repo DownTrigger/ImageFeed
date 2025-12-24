@@ -29,7 +29,6 @@ final class AuthViewController: UIViewController {
             guard
                 let webViewViewController = segue.destination as? WebViewViewController
             else {
-                print("AuthViewController: failed to cast WebViewViewController")
                 assertionFailure("Failed to prepare for \(showWebViewSegueIdentifier)")
                 return
             }
@@ -65,7 +64,6 @@ extension AuthViewController {
             case .success:
                 self.switchToMainScreen()
             case .failure:
-                print("OAuth token fetch failed:")
                 // TODO обработка ошибки
                 break
             }

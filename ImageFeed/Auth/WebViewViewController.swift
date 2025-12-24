@@ -71,7 +71,7 @@ extension WebViewViewController {
     
     private func loadAuthPage() {
         guard var components = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
-            print("WebViewViewController: failed to create URLComponents")
+            assertionFailure("WebViewViewController: failed to create URLComponents")
             return
         }
         
@@ -83,7 +83,7 @@ extension WebViewViewController {
         ]
         
         guard let url = components.url else {
-            print("WebViewViewController: failed to build auth URL")
+            assertionFailure("WebViewViewController: failed to build auth URL")
             return
         }
         
