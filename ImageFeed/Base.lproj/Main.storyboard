@@ -256,7 +256,6 @@
                             <constraint firstItem="rt9-MQ-rH8" firstAttribute="centerX" secondItem="5lg-nX-pT7" secondAttribute="centerX" id="7hm-LH-KUa"/>
                             <constraint firstItem="rt9-MQ-rH8" firstAttribute="centerY" secondItem="5lg-nX-pT7" secondAttribute="centerY" id="AL5-Gu-sg2"/>
                             <constraint firstItem="BT2-fU-R8e" firstAttribute="leading" secondItem="jM6-HG-UdU" secondAttribute="leading" constant="16" id="VQv-hl-tG1"/>
-                            <constraint firstItem="BT2-fU-R8e" firstAttribute="centerX" secondItem="jM6-HG-UdU" secondAttribute="centerX" id="WnP-Bk-d8w"/>
                             <constraint firstItem="jM6-HG-UdU" firstAttribute="trailing" secondItem="BT2-fU-R8e" secondAttribute="trailing" constant="16" id="j3r-AE-B97"/>
                             <constraint firstItem="BT2-fU-R8e" firstAttribute="bottom" secondItem="jM6-HG-UdU" secondAttribute="bottom" constant="-124" id="xhE-5w-Vh1"/>
                         </constraints>
@@ -358,8 +357,12 @@
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" image="logoSplashScreen" translatesAutoresizingMaskIntoConstraints="NO" id="kiq-CV-QjK">
-                                <rect key="frame" x="171" y="411" width="72" height="75"/>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="logoSplashScreen" translatesAutoresizingMaskIntoConstraints="NO" id="kiq-CV-QjK">
+                                <rect key="frame" x="171" y="410.5" width="72" height="75"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="75" id="Tpe-PU-Ck2"/>
+                                    <constraint firstAttribute="width" constant="72" id="f6F-LK-IQb"/>
+                                </constraints>
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="KlV-1Z-R30"/>
