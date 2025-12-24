@@ -94,7 +94,7 @@
                             </tableView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
-                        <color key="backgroundColor" red="0.10196078431372549" green="0.10588235294117647" blue="0.13333333333333333" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="ypBlack"/>
                         <constraints>
                             <constraint firstAttribute="bottom" secondItem="XWn-m6-7JE" secondAttribute="bottom" id="ScL-Lh-sGu"/>
                             <constraint firstAttribute="trailing" secondItem="XWn-m6-7JE" secondAttribute="trailing" id="UNI-lc-qBl"/>
@@ -277,7 +277,7 @@
                         <subviews>
                             <wkWebView contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="0by-KK-hCI">
                                 <rect key="frame" x="0.0" y="92" width="414" height="804"/>
-                                <color key="backgroundColor" name="YP White"/>
+                                <color key="backgroundColor" name="ypWhite"/>
                                 <wkWebViewConfiguration key="configuration">
                                     <audiovisualMediaTypes key="mediaTypesRequiringUserActionForPlayback" none="YES"/>
                                     <wkPreferences key="preferences"/>
@@ -285,7 +285,7 @@
                             </wkWebView>
                             <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progress="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="grV-6t-OAb">
                                 <rect key="frame" x="0.0" y="92" width="414" height="4"/>
-                                <color key="progressTintColor" name="YP Background"/>
+                                <color key="progressTintColor" name="ypBackground"/>
                             </progressView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="jG4-Du-KK8"/>
@@ -385,9 +385,6 @@
         <image name="iconUserFilled" width="30" height="30"/>
         <image name="logoAauthScreen" width="60" height="60"/>
         <image name="logoSplashScreen" width="73" height="75.5"/>
-        <namedColor name="YP Background">
-            <color red="0.10196078431372549" green="0.10588235294117647" blue="0.13333333333333333" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-        </namedColor>
         <namedColor name="YP White">
             <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
