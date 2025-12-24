@@ -15,6 +15,15 @@ class ProfileViewController: UIViewController {
     // MARK: - Properties
     private let photosName: [String] = Array(0..<20).map{ "\($0)" }
     
+    // MARK: - Constants
+    private enum ProfileConstants {
+        static let nameText = "Екатерина Новикова"
+        static let loginText = "@ekaterina_nov"
+        static let descriptionText = "Hello, world!"
+        static let favoritesTitle = "Избранное"
+        static let favoritesCount = "27"
+    }
+    
     private lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
@@ -67,7 +76,7 @@ class ProfileViewController: UIViewController {
     
     func setupNameLabel() {
         nameLabel = UILabel()
-        nameLabel.text = "Екатерина Новикова"
+        nameLabel.text = ProfileConstants.nameText
         nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
         nameLabel.textColor = UIColor(resource: .ypWhite)
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -81,7 +90,7 @@ class ProfileViewController: UIViewController {
     
     func setupLoginNameLabel() {
         loginNameLabel = UILabel()
-        loginNameLabel.text = "@ekaterina_nov"
+        loginNameLabel.text = ProfileConstants.loginText
         loginNameLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         loginNameLabel.textColor = UIColor(resource: .ypGray)
         loginNameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -95,7 +104,7 @@ class ProfileViewController: UIViewController {
     
     func setupDescriptionLabel() {
         descriptionLabel = UILabel()
-        descriptionLabel.text = "Hello, world!"
+        descriptionLabel.text = ProfileConstants.descriptionText
         descriptionLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         descriptionLabel.textColor = UIColor(resource: .ypWhite)
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -109,7 +118,7 @@ class ProfileViewController: UIViewController {
     
     func setupFavorites() {
         favoritesLabel = UILabel()
-        favoritesLabel.text = "Избранное"
+        favoritesLabel.text = ProfileConstants.favoritesTitle
         favoritesLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
         favoritesLabel.textColor = UIColor(resource: .ypWhite)
         favoritesLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -123,7 +132,7 @@ class ProfileViewController: UIViewController {
     
     func setupFavoritesValue() {
         favoritesValueLabel = UILabel()
-        favoritesValueLabel.text = "27"
+        favoritesValueLabel.text = ProfileConstants.favoritesCount
         favoritesValueLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         favoritesValueLabel.textColor = UIColor(resource: .ypWhite)
         favoritesValueLabel.backgroundColor = UIColor(resource: .ypBlue)
