@@ -18,7 +18,7 @@ final class ProfileCell: UITableViewCell {
     let likeButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("", for: .normal)
-        button.tintColor = UIColor(named: "YP Red")
+        button.tintColor = UIColor(resource: .ypRed)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -26,7 +26,7 @@ final class ProfileCell: UITableViewCell {
     let dateLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        label.textColor = UIColor(named: "YP White")
+        label.textColor = UIColor(resource: .ypWhite)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -61,7 +61,7 @@ final class ProfileCell: UITableViewCell {
     
     // MARK: - Setup
     private func setupViews() {
-        backgroundColor = UIColor(named: "YP Black")
+        backgroundColor = UIColor(resource: .ypBlack)
         contentView.addSubview(cellImage)
         contentView.addSubview(likeButton)
         contentView.addSubview(gradientView)
