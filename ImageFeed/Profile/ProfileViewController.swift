@@ -1,16 +1,23 @@
 import UIKit
 
-class ProfileViewController: UIViewController {
+final class ProfileViewController: UIViewController {
     
     // MARK: - UI Elements
     private var profileImageView: UIImageView!
     private var logoutButton: UIButton!
     private var nameLabel: UILabel!
-    private var loginNameLabel: UILabel!
+    private var loginLabel: UILabel!
     private var descriptionLabel: UILabel!
     private var favoritesLabel: UILabel!
     private var favoritesValueLabel: UILabel!
     private var favoritesTableView: UITableView!
+    
+    // MARK: - Constants
+    private let userName = "Екатерина Новикова"
+    private let userLogin = "@ekaterina_nov"
+    private let descriptionText = "Hello, world!"
+    private let favoritesTitle = "Избранное"
+    private let favoritesValue = "27"
     
     // MARK: - Properties
     private let photosName: [String] = Array(0..<20).map{ "\($0)" }
@@ -97,8 +104,8 @@ class ProfileViewController: UIViewController {
         view.addSubview(loginNameLabel)
         
         NSLayoutConstraint.activate([
-            loginNameLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
-            loginNameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
+            loginLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
+            loginLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
         ])
     }
     
@@ -111,7 +118,7 @@ class ProfileViewController: UIViewController {
         view.addSubview(descriptionLabel)
         
         NSLayoutConstraint.activate([
-            descriptionLabel.topAnchor.constraint(equalTo: loginNameLabel.bottomAnchor, constant: 8),
+            descriptionLabel.topAnchor.constraint(equalTo: loginLabel.bottomAnchor, constant: 8),
             descriptionLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
         ])
     }
@@ -177,7 +184,7 @@ class ProfileViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension ProfileViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return photosName.count
+        photosName.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -212,7 +219,7 @@ extension ProfileViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         
-        guard let singleImageVC = storyboard.instantiateViewController(withIdentifier: "SingleImageViewController") as? SingleImageViewController else {
+        guard let singleImageVC = storyboard.instantiateViewController(withIdentifier: SingleImageViewController.reuseIdentifier) as? SingleImageViewController else {
             return
         }
         
@@ -230,6 +237,12 @@ extension ProfileViewController: UITableViewDelegate {
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let imageViewWidth = view.frame.width - imageInsets.left - imageInsets.right
         let imageWidth = image.size.width
+        
+        guard imageWidth > 0 else {
+            print("Image width is zero")
+            return 0
+        }
+        
         let scale = imageViewWidth / imageWidth
         let cellHeight = image.size.height * scale + imageInsets.top + imageInsets.bottom
         return cellHeight

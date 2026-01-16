@@ -2,6 +2,9 @@ import UIKit
 
 final class SingleImageViewController: UIViewController {
     
+    // MARK: - Identifier
+    static let reuseIdentifier = "SingleImageViewController"
+    
     // MARK: Properties
     
     var image: UIImage? {
