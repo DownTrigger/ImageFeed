@@ -5,7 +5,9 @@ import Logging
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     
     override init() {
-        LoggingSystem.bootstrap(StreamLogHandler.standardOutput)
+        LoggingSystem.bootstrap { label in
+            StreamLogHandler.standardOutput(label: label)
+        }
         super.init()
     }
 

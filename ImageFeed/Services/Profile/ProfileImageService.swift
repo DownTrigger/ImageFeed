@@ -21,7 +21,7 @@ final class ProfileImageService {
     // MARK: - Logger
     private let logger = Logger(label: "ProfileImageService")
     
-    // MARK: - Publick API
+    // MARK: - Public API
     func fetchProfileImageURL(username: String, completion: @escaping (Result<String, Error>) -> Void) {
         // Cancel previous in-flight request
         task?.cancel()
@@ -47,30 +47,29 @@ final class ProfileImageService {
         ) { [weak self] (result: Result<UserResult, Error>) in
             guard let self else { return }
 
-            // Handle network result
-            switch result {
-            case .success(let userResult):
-                let url = userResult.profileImage.large
+            DispatchQueue.main.async {
+                defer { self.task = nil }
                 
-                DispatchQueue.main.async {
+                // Handle network result
+                switch result {
+                case .success(let userResult):
+                    let url = userResult.profileImage.large
                     self.avatarURL = url
                     completion(.success(url))
+                    
                     NotificationCenter.default.post(
                         name: ProfileImageService.didChangeNotification,
                         object: self,
                         userInfo: ["URL": url]
                     )
+                    
+                case .failure(let error):
+                    //                self.logger.error("[ProfileImageService.fetchProfileImageURL]: NetworkError – \(error), username=\(username)")
+                    print("[ProfileImageService.fetchProfileImageURL]: NetworkError – \(error), username=\(username)")
+                    completion(.failure(error))
                 }
-                
-            case .failure(let error):
-//                self.logger.error("[ProfileImageService.fetchProfileImageURL]: NetworkError – \(error), username=\(username)")
-                print("[ProfileImageService.fetchProfileImageURL]: NetworkError – \(error), username=\(username)")
-                completion(.failure(error))
             }
-
-            self.task = nil
         }
-
         self.task = task
         task.resume()
     }

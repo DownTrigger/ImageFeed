@@ -49,7 +49,6 @@ class ProfileViewController: UIViewController {
         updateProfileUI()
         updateAvatar()
         
-        requestAvatarIfNeeded()
     }
     
     deinit {
@@ -66,7 +65,10 @@ class ProfileViewController: UIViewController {
         guard
             let profileImageURL = ProfileImageService.shared.avatarURL,
             let imageUrl = URL(string: profileImageURL)
-        else { return }
+        else {
+            print("[ProfileViewController.updateAvatar]: Error – invalid avatar URL")
+            return
+        }
 
         print("imageUrl: \(imageUrl)")
 
@@ -85,13 +87,6 @@ class ProfileViewController: UIViewController {
                 .cacheOriginalImage,
                 .forceRefresh
             ])
-    }
-    
-    private func requestAvatarIfNeeded() {
-        guard let profile = profileService.profile else { return }
-        ProfileImageService.shared.fetchProfileImageURL(
-            username: profile.username
-        ) { _ in }
     }
     
     private func updateProfileDetails(with profile: Profile) {

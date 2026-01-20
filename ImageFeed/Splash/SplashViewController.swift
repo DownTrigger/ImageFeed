@@ -33,8 +33,9 @@ final class SplashViewController: UIViewController {
         guard !isAuthInProgress else { return }
 
         if let token = tokenStorage.token {
-            fetchProfile(token: token)
             isAuthInProgress = true
+            UIBlockingProgressHUD.show()
+            fetchProfile(token: token)
         } else {
             isAuthInProgress = true
             showAuthViewController()
@@ -81,13 +82,15 @@ final class SplashViewController: UIViewController {
 
             switch result {
             case let .success(profile):
+                UIBlockingProgressHUD.dismiss()
                 ProfileImageService.shared.fetchProfileImageURL(username: profile.username) { _ in }
                 self.switchToTabBarController()
 
             case let .failure(error):
+                UIBlockingProgressHUD.dismiss()
 //                self.logger.error("[SplashViewController.fetchProfile]: Error – \(error.localizedDescription)")
                 print("[SplashViewController.fetchProfile]: Error – \(error.localizedDescription)")
-                break
+                self.showAuthViewController()
             }
         }
     }

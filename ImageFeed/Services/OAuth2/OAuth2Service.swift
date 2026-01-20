@@ -24,6 +24,8 @@ final class OAuth2Service {
         
         // Prevent duplicate requests with the same code
         guard lastCode != code else {
+//            self.logger.error("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")
+            print("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")
             return
         }
         
@@ -53,6 +55,7 @@ final class OAuth2Service {
                 // Handle network result
                 switch result {
                 case .success(let decoded):
+//                    completion(.failure(NetworkError.invalidRequest)) // Потестить алерт
                     let token = decoded.accessToken
                     self.tokenStorage.token = token
                     completion(.success(token))
@@ -71,7 +74,7 @@ final class OAuth2Service {
         task.resume()
     }
     
-    // MARK: Private helpers
+    // MARK: - Private helpers
     private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard var components = URLComponents(string: "https://unsplash.com/oauth/token") else {
 //            self.logger.error("[OAuth2Service.makeOAuthTokenRequest]: Failed to create URLComponents")

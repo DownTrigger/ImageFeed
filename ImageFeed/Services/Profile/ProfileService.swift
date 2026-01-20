@@ -38,38 +38,38 @@ final class ProfileService {
         ) { [weak self] (result: Result<ProfileResult, Error>) in
             guard let self = self else { return }
             
-            // Handle network result
-            switch result {
-            case .success(let profileResult):
-                let profile = Profile(
-                    username: profileResult.username,
-                    name: "\(profileResult.firstName) \(profileResult.lastName)",
-                    loginName: "@\(profileResult.username)",
-                    bio: profileResult.bio
-                )
-                self.profile = profile
-                
-                NotificationCenter.default.post(
-                    name: ProfileService.profileDidChange,
-                    object: self
-                )
-
-                completion(.success(profile))
-                
-            case .failure(let error):
-//                self.logger.error("[ProfileService.fetchProfile]: NetworkError – \(error)")
-                print("[ProfileService.fetchProfile]: NetworkError – \(error)")
-                completion(.failure(error))
+            DispatchQueue.main.async {
+                defer { self.task = nil }
+                // Handle network result
+                switch result {
+                case .success(let profileResult):
+                    let profile = Profile(
+                        username: profileResult.username,
+                        name: "\(profileResult.firstName) \(profileResult.lastName)",
+                        loginName: "@\(profileResult.username)",
+                        bio: profileResult.bio
+                    )
+                    
+                    self.profile = profile
+                    NotificationCenter.default.post(
+                        name: ProfileService.profileDidChange,
+                        object: self
+                    )
+                    completion(.success(profile))
+                    
+                case .failure(let error):
+                    //                self.logger.error("[ProfileService.fetchProfile]: NetworkError – \(error)")
+                    print("[ProfileService.fetchProfile]: NetworkError – \(error)")
+                    completion(.failure(error))
+                }
             }
-            
-            self.task = nil
         }
 
         self.task = task
         task.resume()
     }
     
-    // MARK: - Private helpers
+    // MARK: - Private Helpers
     private func makeProfileRequest(token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/me") else {
 //            self.logger.error("[ProfileService.makeProfileRequest]: NetworkError – invalidURL")
