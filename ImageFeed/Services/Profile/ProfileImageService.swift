@@ -30,7 +30,9 @@ final class ProfileImageService {
         guard let token = tokenStorage.token else {
 //            self.logger.error("[ProfileImageService.fetchProfileImageURL]: AuthError – token missing")
             print("[ProfileImageService.fetchProfileImageURL]: AuthError – token missing")
-            completion(.failure(NSError(domain: "ProfileImageService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Authorization token missing"])))
+            DispatchQueue.main.async {
+                completion(.failure(NSError(domain: "ProfileImageService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Authorization token missing"])))
+            }
             return
         }
 
@@ -38,7 +40,9 @@ final class ProfileImageService {
         guard let request = makeProfileImageRequest(username: username, token: token) else {
 //            self.logger.error("[ProfileImageService.fetchProfileImageURL]: NetworkError – badURL, username=\(username)")
             print("[ProfileImageService.fetchProfileImageURL]: NetworkError – badURL, username=\(username)")
-            completion(.failure(URLError(.badURL)))
+            DispatchQueue.main.async {
+                completion(.failure(URLError(.badURL)))
+            }
             return
         }
 

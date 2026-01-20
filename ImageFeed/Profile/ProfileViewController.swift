@@ -293,7 +293,9 @@ extension ProfileViewController {
         
         dataStore.fetchDataRecords(ofTypes: dataTypes) { records in
             dataStore.removeData(ofTypes: dataTypes, for: records) {
-                completion()
+                DispatchQueue.main.async {
+                    completion()
+                }
             }
         }
     }

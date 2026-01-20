@@ -29,7 +29,9 @@ final class ProfileService {
         guard let request = makeProfileRequest(token: token) else {
 //            self.logger.error("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
             print("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
-            completion(.failure(URLError(.badURL)))
+            DispatchQueue.main.async {
+                completion(.failure(URLError(.badURL)))
+            }
             return
         }
 

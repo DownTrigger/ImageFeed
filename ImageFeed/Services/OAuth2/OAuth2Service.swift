@@ -39,7 +39,9 @@ final class OAuth2Service {
         guard let request = makeOAuthTokenRequest(code: code) else {
 //            self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
             print("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
-            completion(.failure(NetworkError.invalidRequest))
+            DispatchQueue.main.async {
+                completion(.failure(NetworkError.invalidRequest))
+            }
             return
         }
         
