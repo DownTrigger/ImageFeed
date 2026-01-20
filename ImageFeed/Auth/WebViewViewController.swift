@@ -17,19 +17,20 @@ protocol WebViewViewControllerDelegate: AnyObject {
 // MARK: - WebViewViewController
 final class WebViewViewController: UIViewController {
     
+    // MARK: - Logger
     private let logger = Logger(label: "WebViewViewController")
     
-    // MARK: Outlets
+    // MARK: - Outlets
     @IBOutlet private var webView: WKWebView!
     @IBOutlet private var progressView: UIProgressView!
     
-    // MARK: Dependencies
+    // MARK: - Dependencies
     weak var delegate: WebViewViewControllerDelegate?
     
-    // MARK: Private properties
+    // MARK: - Private properties
     private var estimatedProgressObservation: NSKeyValueObservation?
     
-    // MARK: Lifecycle
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         configureWebView()
@@ -88,15 +89,13 @@ extension WebViewViewController {
         webView.load(URLRequest(url: url))
     }
     
+    
     private func observeWebViewProgress() {
         estimatedProgressObservation = webView.observe(
             \.estimatedProgress,
              options: [.new]
         ) { [weak self] webView, _ in
-            guard let self = self else {
-                print("[WebViewViewController.observeWebViewProgress]: Error – self deallocated during KVO callback")
-                return
-            }
+            guard let self else { return }
             self.updateProgress()
         }
         updateProgress()

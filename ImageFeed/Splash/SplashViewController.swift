@@ -2,38 +2,39 @@ import UIKit
 import Logging
 
 final class SplashViewController: UIViewController {
-    private let showAuthenticationScreenSegueIdentifier = "ShowAuthenticationScreen"
-    private let tokenStorage = OAuth2TokenStorage.shared
-    private var isAuthInProgress = false
-    private let profileService = ProfileService.shared
     
+    // MARK: - Logger
     private let logger = Logger(label: "SplashViewController")
     
-    private var ImageView: UIImageView!
+    // MARK: - Dependencies
+    private let profileService = ProfileService.shared
+    private let tokenStorage = OAuth2TokenStorage.shared
+    private let authService = OAuth2Service.shared
     
-    func setupImageView() {
-        let imageSplashScreenLogo = UIImage(resource: .logoSplashScreen)
-        ImageView = UIImageView(image: imageSplashScreenLogo)
-        ImageView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(ImageView)
-        
-        NSLayoutConstraint.activate([
-            ImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            ImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
+    // MARK: - State
+    private var isAuthInProgress = false
+    
+    // MARK: - UI
+    private var imageView: UIImageView!
+    
+    // MARK: - Lifecycle
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        .lightContent
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupImageView()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        setupImageView()
         
         guard !isAuthInProgress else { return }
 
         if let token = tokenStorage.token {
             fetchProfile(token: token)
             isAuthInProgress = true
-//            switchToTabBarController()
         } else {
             isAuthInProgress = true
             showAuthViewController()
@@ -45,9 +46,7 @@ final class SplashViewController: UIViewController {
         setNeedsStatusBarAppearanceUpdate()
     }
     
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        .lightContent
-    }
+    // MARK: - Navigation
     
     private func showAuthViewController() {
         let storyboard = UIStoryboard(name: "Main", bundle: .main)
@@ -62,7 +61,11 @@ final class SplashViewController: UIViewController {
     }
     
     private func switchToTabBarController() {
-        guard let window = UIApplication.shared.windows.first else {
+        guard
+            let windowScene = view.window?.windowScene,
+            let sceneDelegate = windowScene.delegate as? SceneDelegate,
+            let window = sceneDelegate.window
+        else {
 //            self.logger.error("[SplashViewController.switchToTabBarController]: Error – window is nil")
             print("[SplashViewController.switchToTabBarController]: Error – window is nil")
             return
@@ -71,9 +74,9 @@ final class SplashViewController: UIViewController {
         let tabBarController = UIStoryboard(name: "Main", bundle: .main)
             .instantiateViewController(withIdentifier: "TabBarViewController")
         window.rootViewController = tabBarController
-        
     }
     
+    // MARK: - Network
     private func fetchProfile(token: String) {
         profileService.fetchProfile(token) { [weak self] result in
 
@@ -91,15 +94,31 @@ final class SplashViewController: UIViewController {
             }
         }
     }
+    
+    // MARK: - UI Helpers
+    
+    func setupImageView() {
+        let imageSplashScreenLogo = UIImage(resource: .logoSplashScreen)
+        imageView = UIImageView(image: imageSplashScreenLogo)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(imageView)
+        
+        NSLayoutConstraint.activate([
+            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+    }
+    
 }
 
+// MARK: - AuthViewControllerDelegate
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ vc: AuthViewController, didReceiveCode code: String) {
         vc.dismiss(animated: true) { [weak self] in
             guard let self else { return }
             
             UIBlockingProgressHUD.show()
-            OAuth2Service.shared.fetchOAuthToken(code) { [weak self] result in
+            authService.fetchOAuthToken(code) { [weak self] result in
                 UIBlockingProgressHUD.dismiss()
                 
                 guard let self else { return }
@@ -107,15 +126,15 @@ extension SplashViewController: AuthViewControllerDelegate {
                 switch result {
                 case .success:
                     guard let token = self.tokenStorage.token else {
-                        //                    self.logger.error("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
+//                        self.logger.error("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
                         print("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
                         return
                     }
                     self.fetchProfile(token: token)
                     
                 case let .failure(error):
-                    //                self.logger.error("[SplashViewController.fetchOAuthToken]: Error – \(error.localizedDescription)")
-                    print("[SplashViewController.fetchOAuthToken]: Error – \(error.localizedDescription)")
+//                    self.logger.error("[SplashViewController.fetchOAuthToken]: Error – \(error)")
+                    print("[SplashViewController.fetchOAuthToken]: Error – \(error)")
                     self.showAuthErrorAlert {
                         self.showAuthViewController()
                     }

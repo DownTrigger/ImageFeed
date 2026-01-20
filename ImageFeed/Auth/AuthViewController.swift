@@ -9,21 +9,22 @@ protocol AuthViewControllerDelegate: AnyObject {
 // MARK: - AuthViewController
 final class AuthViewController: UIViewController {
     
-    private let logger = Logger(label: "AuthViewController")
-    
     // MARK: Constants
     private let showWebViewSegueIdentifier = "ShowWebView"
     
-    // MARK: Public properties
+    // MARK: - Logger
+    private let logger = Logger(label: "AuthViewController")
+    
+    // MARK: - Public properties
     weak var delegate: AuthViewControllerDelegate?
     
-    // MARK: Lifecycle
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         configureBackButton()
     }
     
-    // MARK: Navigation
+    // MARK: - Navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == showWebViewSegueIdentifier {
             segue.destination.modalPresentationStyle = .fullScreen

@@ -1,42 +1,31 @@
 import Foundation
 import Logging
 
-struct Profile {
-    let username: String
-    let name: String
-    let loginName: String
-    let bio: String?
-}
-
-struct ProfileResult: Codable {
-    let username: String
-    let firstName: String
-    let lastName: String
-    let bio: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case username
-        case firstName = "first_name"
-        case lastName = "last_name"
-        case bio
-    }
-}
-
 final class ProfileService {
     
-    private let logger = Logger(label: "ProfileService")
-    
-    static let profileDidChange = Notification.Name("profileDidChange")
+    // MARK: - Singleton
     static let shared = ProfileService()
     private init() {}
+    
+    // MARK: - Notifications
+    static let profileDidChange = Notification.Name("profileDidChange")
+    
+    // MARK: - Dependencies
+    private let urlSession = URLSession.shared
+    
+    // MARK: - State
+    private var task: URLSessionTask?
     private(set) var profile: Profile?
     
-    private let urlSession = URLSession.shared
-    private var task: URLSessionTask?
+    // MARK: - Logger
+    private let logger = Logger(label: "ProfileService")
     
+    // MARK: - Public API
     func fetchProfile(_ token: String, completion: @escaping (Result<Profile, Error>) -> Void) {
+        // Cancel previous in-flight request
         task?.cancel()
         
+        // Build profile request
         guard let request = makeProfileRequest(token: token) else {
 //            self.logger.error("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
             print("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
@@ -49,6 +38,7 @@ final class ProfileService {
         ) { [weak self] (result: Result<ProfileResult, Error>) in
             guard let self = self else { return }
             
+            // Handle network result
             switch result {
             case .success(let profileResult):
                 let profile = Profile(
@@ -79,6 +69,7 @@ final class ProfileService {
         task.resume()
     }
     
+    // MARK: - Private helpers
     private func makeProfileRequest(token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/me") else {
 //            self.logger.error("[ProfileService.makeProfileRequest]: NetworkError – invalidURL")

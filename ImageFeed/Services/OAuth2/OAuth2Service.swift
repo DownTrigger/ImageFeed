@@ -3,39 +3,37 @@ import Logging
 
 final class OAuth2Service {
     
-    private let urlSession = URLSession.shared
-    private var task: URLSessionTask?
-    private var lastCode: String?
-    
     // MARK: Singleton
     static let shared = OAuth2Service()
     private init() { }
     
     // MARK: - Dependencies
     private let tokenStorage = OAuth2TokenStorage.shared
+    private let urlSession = URLSession.shared
+    
+    // MARK: - State
+    private var task: URLSessionTask?
+    private var lastCode: String?
     
     // MARK: - Logger
     private let logger = Logger(label: "OAuth2Service")
     
-    // MARK: Public API
+    // MARK: - Public API
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
         assert(Thread.isMainThread)
         
-//         // Потестить алерт
-//        DispatchQueue.main.async {
-//                completion(.failure(NetworkError.invalidRequest))
-//            }
-//            return
-
+        // Prevent duplicate requests with the same code
         guard lastCode != code else {
             return
         }
         
+        // Cancel previous in-flight request
         task?.cancel()
         
         lastCode = code
         let requestCode = code
         
+        // Build OAuth token request
         guard let request = makeOAuthTokenRequest(code: code) else {
 //            self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
             print("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
@@ -43,6 +41,7 @@ final class OAuth2Service {
             return
         }
         
+        // Perform network request
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuth2TokenResponseBody, Error>) in
             DispatchQueue.main.async {
                 guard let self = self else { return }
@@ -51,6 +50,7 @@ final class OAuth2Service {
                     return
                 }
                 
+                // Handle network result
                 switch result {
                 case .success(let decoded):
                     let token = decoded.accessToken
@@ -58,7 +58,7 @@ final class OAuth2Service {
                     completion(.success(token))
                     
                 case .failure(let error):
-                    //                self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
+//                    self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
                     print("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
                     completion(.failure(error))
                 }

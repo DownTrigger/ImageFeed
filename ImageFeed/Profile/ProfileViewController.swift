@@ -4,6 +4,11 @@ import Kingfisher
 
 class ProfileViewController: UIViewController {
     
+    // MARK: - Dependencies
+    private let tokenStorage = OAuth2TokenStorage.shared
+    private let profileService = ProfileService.shared
+    
+    // MARK: - State
     private var profileImageServiceObserver: NSObjectProtocol?
     private var profileObserver: NSObjectProtocol?
 
@@ -17,24 +22,46 @@ class ProfileViewController: UIViewController {
     private var favoritesValueLabel: UILabel!
     private var favoritesTableView: UITableView!
     
-    // MARK: - Properties
-    private let photosName: [String] = Array(0..<20).map{ "\($0)" }
-    private let tokenStorage = OAuth2TokenStorage.shared
-    private let profileService = ProfileService.shared
-    
     // MARK: - Constants
     private enum ProfileConstants {
         static let favoritesTitle = "Избранное"
         static let favoritesCount = "27"
     }
     
-    private func updateProfileDetails(with profile: Profile) {
-        nameLabel.text = profile.name.isEmpty ? "Имя не указано" : profile.name
-        loginNameLabel.text = profile.loginName.isEmpty ? "@неизвестный_пользователь" : profile.loginName
-        descriptionLabel.text = (profile.bio?.isEmpty ?? true) ? "Профиль не заполнен" : profile.bio
-       
+    // MARK: - Formatters
+    private lazy var dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
+        return formatter
+    }()
+    
+    // MARK: - Properties
+    private let photosName: [String] = Array(0..<20).map{ "\($0)" }
+    
+    // MARK: - Lifecycle
+    override func viewDidLoad() {
+        super.viewDidLoad()
+ 
+        setupUI()
+        setupObservers()
+        
+        updateProfileUI()
+        updateAvatar()
+        
+        requestAvatarIfNeeded()
     }
     
+    deinit {
+        if let profileObserver {
+            NotificationCenter.default.removeObserver(profileObserver)
+        }
+        if let profileImageServiceObserver {
+            NotificationCenter.default.removeObserver(profileImageServiceObserver)
+        }
+    }
+    
+    // MARK: - Screen Logic
     private func updateAvatar() {
         guard
             let profileImageURL = ProfileImageService.shared.avatarURL,
@@ -57,60 +84,29 @@ class ProfileViewController: UIViewController {
                 .scaleFactor(UIScreen.main.scale),
                 .cacheOriginalImage,
                 .forceRefresh
-            ]) { result in
-
-                switch result {
-                case .success(let value):
-                    print(value.image)
-                    print(value.cacheType)
-                    print(value.source)
-
-                case .failure(let error):
-                    print(error)
-                }
-            }
+            ])
     }
     
-    private func renderProfileIfAvailable()  {
-        guard let profile = profileService.profile else { return }
-        updateProfileDetails(with: profile)
-    }
-    
-    private func fetchAvatarIfNeeded() {
+    private func requestAvatarIfNeeded() {
         guard let profile = profileService.profile else { return }
         ProfileImageService.shared.fetchProfileImageURL(
             username: profile.username
         ) { _ in }
     }
     
-    private lazy var dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        return formatter
-    }()
-    
-    // MARK: - Lifecycle
-    override func viewDidLoad() {
-        super.viewDidLoad()
- 
-        setupProfileImageView()
-        setupLogoutButton()
-        setupNameLabel()
-        setupLoginNameLabel()
-        setupDescriptionLabel()
-        setupFavorites()
-        setupFavoritesValue()
-        setupFavoritesTableView()
-        
-        setupObservers()
-        
-        renderProfileIfAvailable()
-        updateAvatar()
-        
-        fetchAvatarIfNeeded()
+    private func updateProfileDetails(with profile: Profile) {
+        nameLabel.text = profile.name.isEmpty ? "Имя не указано" : profile.name
+        loginNameLabel.text = profile.loginName.isEmpty ? "@неизвестный_пользователь" : profile.loginName
+        descriptionLabel.text = (profile.bio?.isEmpty ?? true) ? "Профиль не заполнен" : profile.bio
+       
     }
     
+    private func updateProfileUI()  {
+        guard let profile = profileService.profile else { return }
+        updateProfileDetails(with: profile)
+    }
+    
+    // MARK: - Observers
     private func setupObservers() {
         profileObserver = NotificationCenter.default
             .addObserver(
@@ -119,7 +115,7 @@ class ProfileViewController: UIViewController {
                 queue: .main
             ) { [weak self] _ in
                 guard let self else { return }
-                self.renderProfileIfAvailable()
+                self.updateProfileUI()
             }
         
         profileImageServiceObserver = NotificationCenter.default
@@ -134,7 +130,18 @@ class ProfileViewController: UIViewController {
     }
     
     // MARK: - UI Setup
-    func setupProfileImageView() {
+    private func setupUI() {
+        setupProfileImageView()
+        setupLogoutButton()
+        setupNameLabel()
+        setupLoginNameLabel()
+        setupDescriptionLabel()
+        setupFavorites()
+        setupFavoritesValue()
+        setupFavoritesTableView()
+    }
+    
+    private func setupProfileImageView() {
         let profileImage = UIImage(resource: .userProfile)
         profileImageView = UIImageView(image: profileImage)
         profileImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -148,7 +155,7 @@ class ProfileViewController: UIViewController {
         ])
     }
     
-    func setupLogoutButton() {
+    private func setupLogoutButton() {
         let buttonImage = UIImage(resource: .iconLogout)
         logoutButton = UIButton.systemButton(with: buttonImage, target: self, action: #selector(didTapLogoutButton))
         logoutButton.tintColor = UIColor(resource: .ypRed)
@@ -163,7 +170,7 @@ class ProfileViewController: UIViewController {
         ])
     }
     
-    func setupNameLabel() {
+    private func setupNameLabel() {
         nameLabel = UILabel()
         nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
         nameLabel.textColor = UIColor(resource: .ypWhite)
@@ -176,7 +183,7 @@ class ProfileViewController: UIViewController {
         ])
     }
     
-    func setupLoginNameLabel() {
+    private func setupLoginNameLabel() {
         loginNameLabel = UILabel()
         loginNameLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         loginNameLabel.textColor = UIColor(resource: .ypGray)
@@ -189,7 +196,7 @@ class ProfileViewController: UIViewController {
         ])
     }
     
-    func setupDescriptionLabel() {
+    private func setupDescriptionLabel() {
         descriptionLabel = UILabel()
         descriptionLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         descriptionLabel.textColor = UIColor(resource: .ypWhite)
@@ -202,7 +209,7 @@ class ProfileViewController: UIViewController {
         ])
     }
     
-    func setupFavorites() {
+    private func setupFavorites() {
         favoritesLabel = UILabel()
         favoritesLabel.text = ProfileConstants.favoritesTitle
         favoritesLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
@@ -216,7 +223,7 @@ class ProfileViewController: UIViewController {
         ])
     }
     
-    func setupFavoritesValue() {
+    private func setupFavoritesValue() {
         favoritesValueLabel = UILabel()
         favoritesValueLabel.text = ProfileConstants.favoritesCount
         favoritesValueLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
@@ -236,7 +243,7 @@ class ProfileViewController: UIViewController {
         ])
     }
     
-    func setupFavoritesTableView() {
+    private func setupFavoritesTableView() {
         favoritesTableView = UITableView()
         favoritesTableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(favoritesTableView)
@@ -255,7 +262,6 @@ class ProfileViewController: UIViewController {
     }
     
     // MARK: - Actions
-    // Временная реализация логаута
     @objc private func didTapLogoutButton() {
         tokenStorage.token = nil
 
@@ -275,21 +281,10 @@ class ProfileViewController: UIViewController {
             window.makeKeyAndVisible()
         }
     }
-    
-    
-    deinit {
-        if let profileObserver {
-            NotificationCenter.default.removeObserver(profileObserver)
-        }
-        if let profileImageServiceObserver {
-            NotificationCenter.default.removeObserver(profileImageServiceObserver)
-        }
-    }
-    
 }
 
+// MARK: - WebView Cleanup
 extension ProfileViewController {
-    // Временная реализация - почистить куки WebView
     private func clearWebViewData(completion: @escaping () -> Void) {
         let dataStore = WKWebsiteDataStore.default()
         
@@ -327,21 +322,6 @@ extension ProfileViewController: UITableViewDataSource {
     }
 }
 
-// MARK: - Cell Configuration
-extension ProfileViewController {
-    func configCell(for cell: ProfileCell, with indexPath: IndexPath) {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return
-        }
-        
-        cell.cellImage.image = image
-        cell.dateLabel.text = dateFormatter.string(from: Date())
-        
-        let likeImage = UIImage(resource: .iconLikeFilled)
-        cell.likeButton.setImage(likeImage, for: .normal)
-    }
-}
-
 // MARK: - UITableViewDelegate
 extension ProfileViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -371,3 +351,17 @@ extension ProfileViewController: UITableViewDelegate {
     }
 }
 
+// MARK: - Cell Configuration
+extension ProfileViewController {
+    func configCell(for cell: ProfileCell, with indexPath: IndexPath) {
+        guard let image = UIImage(named: photosName[indexPath.row]) else {
+            return
+        }
+        
+        cell.cellImage.image = image
+        cell.dateLabel.text = dateFormatter.string(from: Date())
+        
+        let likeImage = UIImage(resource: .iconLikeFilled)
+        cell.likeButton.setImage(likeImage, for: .normal)
+    }
+}

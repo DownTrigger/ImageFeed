@@ -3,27 +3,20 @@ import UIKit
 final class SingleImageViewController: UIViewController {
     
     // MARK: Properties
-    
     var image: UIImage? {
         didSet {
-            guard isViewLoaded, let image else { return }
-            
-            imageView.image = image
-            imageView.frame.size = image.size
+            updateImage()
         }
     }
     
+    // MARK: - Outlets
     @IBOutlet private var scrollView: UIScrollView!
     @IBOutlet private var imageView: UIImageView!
     
     // MARK: Lifecycle
-    
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        guard let image else { return }
-        imageView.image = image
-        imageView.frame.size = image.size
+        updateImage()
     }
     
     override func viewDidLayoutSubviews() {
@@ -33,7 +26,6 @@ final class SingleImageViewController: UIViewController {
     }
     
     // MARK: Actions
-    
     @IBAction func didTapLikeButton(_ sender: UIButton) {
         print("like")
     }
@@ -49,6 +41,11 @@ final class SingleImageViewController: UIViewController {
     }
     
     // MARK: Private Methods
+    private func updateImage() {
+        guard isViewLoaded, let image else { return }
+        imageView.image = image
+        imageView.frame.size = image.size
+    }
     
     private func updateMinZoomScale(for image: UIImage) {
         let widthScale = scrollView.bounds.width / image.size.width
@@ -80,7 +77,6 @@ final class SingleImageViewController: UIViewController {
 }
 
 // MARK: UIScrollViewDelegate
-
 extension SingleImageViewController: UIScrollViewDelegate {
     
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {

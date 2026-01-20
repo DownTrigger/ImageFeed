@@ -1,47 +1,40 @@
 import Foundation
 import Logging
 
-struct ProfileImage: Codable {
-    let small: String
-    let medium: String
-    let large: String
-
-    private enum CodingKeys: String, CodingKey {
-        case small
-        case medium
-        case large
-    }
-}
-
-struct UserResult: Codable {
-    let profileImage: ProfileImage
-
-    private enum CodingKeys: String, CodingKey {
-        case profileImage = "profile_image"
-    }
-}
-
 final class ProfileImageService {
     
-    private let logger = Logger(label: "ProfileImageService")
-    
-    static let didChangeNotification = Notification.Name(rawValue: "ProfileImageProviderDidChange")
+    // MARK: - Singleton
     static let shared = ProfileImageService()
     private init() {}
+    
+    // MARK: - Notifications
+    static let didChangeNotification = Notification.Name(rawValue: "ProfileImageProviderDidChange")
+    
+    // MARK: - Dependencies
+    private let urlSession = URLSession.shared
+    private let tokenStorage = OAuth2TokenStorage.shared
+    
+    // MARK: - State
+    private var task: URLSessionTask?
     private(set) var avatarURL: String?
     
-    private var task: URLSessionTask?
+    // MARK: - Logger
+    private let logger = Logger(label: "ProfileImageService")
     
+    // MARK: - Publick API
     func fetchProfileImageURL(username: String, completion: @escaping (Result<String, Error>) -> Void) {
+        // Cancel previous in-flight request
         task?.cancel()
 
-        guard let token = OAuth2TokenStorage.shared.token else {
+        // Ensure auth token exists
+        guard let token = tokenStorage.token else {
 //            self.logger.error("[ProfileImageService.fetchProfileImageURL]: AuthError – token missing")
             print("[ProfileImageService.fetchProfileImageURL]: AuthError – token missing")
             completion(.failure(NSError(domain: "ProfileImageService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Authorization token missing"])))
             return
         }
 
+        // Build profile image request
         guard let request = makeProfileImageRequest(username: username, token: token) else {
 //            self.logger.error("[ProfileImageService.fetchProfileImageURL]: NetworkError – badURL, username=\(username)")
             print("[ProfileImageService.fetchProfileImageURL]: NetworkError – badURL, username=\(username)")
@@ -49,11 +42,12 @@ final class ProfileImageService {
             return
         }
 
-        let task = URLSession.shared.objectTask(
+        let task = urlSession.objectTask(
             for: request
         ) { [weak self] (result: Result<UserResult, Error>) in
             guard let self else { return }
 
+            // Handle network result
             switch result {
             case .success(let userResult):
                 let url = userResult.profileImage.large
@@ -81,6 +75,7 @@ final class ProfileImageService {
         task.resume()
     }
     
+    // MARK: - Private Helpers
     private func makeProfileImageRequest(username: String, token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/users/\(username)") else {
 //            self.logger.error("[ProfileImageService.makeProfileImageRequest]: NetworkError – invalidURL, username=\(username)")
