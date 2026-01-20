@@ -1,16 +1,42 @@
 import UIKit
+import Logging
 
 final class SplashViewController: UIViewController {
-    
+    private let showAuthenticationScreenSegueIdentifier = "ShowAuthenticationScreen"
     private let tokenStorage = OAuth2TokenStorage.shared
+    private var isAuthInProgress = false
+    private let profileService = ProfileService.shared
+    
+    private let logger = Logger(label: "SplashViewController")
+    
+    private var ImageView: UIImageView!
+    
+    func setupImageView() {
+        let imageSplashScreenLogo = UIImage(resource: .logoSplashScreen)
+        ImageView = UIImageView(image: imageSplashScreenLogo)
+        ImageView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(ImageView)
+        
+        NSLayoutConstraint.activate([
+            ImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            ImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+    }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        if tokenStorage.token != nil {
-            switchToMainInterface()
+        setupImageView()
+        
+        guard !isAuthInProgress else { return }
+
+        if let token = tokenStorage.token {
+            fetchProfile(token: token)
+            isAuthInProgress = true
+//            switchToTabBarController()
         } else {
-            presentAuthFlow()
+            isAuthInProgress = true
+            showAuthViewController()
         }
     }
     
@@ -23,29 +49,93 @@ final class SplashViewController: UIViewController {
         .lightContent
     }
     
-    // MARK: - Navigation
-    private func presentAuthFlow() {
+    private func showAuthViewController() {
         let storyboard = UIStoryboard(name: "Main", bundle: .main)
-        
-        guard let navigationController = storyboard
-            .instantiateViewController(withIdentifier: "AuthNavigationController") as? UINavigationController
-        else {
-            assertionFailure("Failed to instantiate Auth flow")
+        guard let authViewController = storyboard.instantiateViewController(withIdentifier: "AuthViewController") as? AuthViewController else {
+            assertionFailure("Не удалось найти AuthViewController по идентификатору")
             return
         }
-        
+        authViewController.delegate = self
+        let navigationController = UINavigationController(rootViewController: authViewController)
         navigationController.modalPresentationStyle = .fullScreen
         present(navigationController, animated: true)
     }
     
-    private func switchToMainInterface() {
+    private func switchToTabBarController() {
         guard let window = UIApplication.shared.windows.first else {
-            assertionFailure("Invalid window configuration")
+//            self.logger.error("[SplashViewController.switchToTabBarController]: Error – window is nil")
+            print("[SplashViewController.switchToTabBarController]: Error – window is nil")
             return
         }
         
         let tabBarController = UIStoryboard(name: "Main", bundle: .main)
             .instantiateViewController(withIdentifier: "TabBarViewController")
         window.rootViewController = tabBarController
+        
+    }
+    
+    private func fetchProfile(token: String) {
+        profileService.fetchProfile(token) { [weak self] result in
+
+            guard let self else { return }
+
+            switch result {
+            case let .success(profile):
+                ProfileImageService.shared.fetchProfileImageURL(username: profile.username) { _ in }
+                self.switchToTabBarController()
+
+            case let .failure(error):
+//                self.logger.error("[SplashViewController.fetchProfile]: Error – \(error.localizedDescription)")
+                print("[SplashViewController.fetchProfile]: Error – \(error.localizedDescription)")
+                break
+            }
+        }
+    }
+}
+
+extension SplashViewController: AuthViewControllerDelegate {
+    func authViewController(_ vc: AuthViewController, didReceiveCode code: String) {
+        vc.dismiss(animated: true) { [weak self] in
+            guard let self else { return }
+            
+            UIBlockingProgressHUD.show()
+            OAuth2Service.shared.fetchOAuthToken(code) { [weak self] result in
+                UIBlockingProgressHUD.dismiss()
+                
+                guard let self else { return }
+                
+                switch result {
+                case .success:
+                    guard let token = self.tokenStorage.token else {
+                        //                    self.logger.error("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
+                        print("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
+                        return
+                    }
+                    self.fetchProfile(token: token)
+                    
+                case let .failure(error):
+                    //                self.logger.error("[SplashViewController.fetchOAuthToken]: Error – \(error.localizedDescription)")
+                    print("[SplashViewController.fetchOAuthToken]: Error – \(error.localizedDescription)")
+                    self.showAuthErrorAlert {
+                        self.showAuthViewController()
+                    }
+                }
+            }
+        }
+    }
+    
+    func showAuthErrorAlert(onDismiss: @escaping () -> Void) {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+        
+        let action = UIAlertAction(title: "Ок", style: .default) { _ in
+            onDismiss()
+        }
+
+        alert.addAction(action)
+        present(alert, animated: true)
     }
 }

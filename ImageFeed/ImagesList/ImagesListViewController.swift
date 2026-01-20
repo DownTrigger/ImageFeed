@@ -1,6 +1,9 @@
 import UIKit
+import Logging
 
 class ImagesListViewController: UIViewController {
+    
+    private let logger = Logger(label: "ImagesListViewController")
     
     // MARK: - IBOutlets
     @IBOutlet private var tableView: UITableView!
@@ -28,7 +31,8 @@ class ImagesListViewController: UIViewController {
                 let viewController = segue.destination as? SingleImageViewController,
                 let indexPath = sender as? IndexPath
             else {
-                assertionFailure("Invalid segue destination")
+//                self.logger.error("[ImagesListViewController.prepare]: Error – invalid destination or sender for ShowSingleImage segue")
+                print("[ImagesListViewController.prepare]: Error – invalid destination or sender for ShowSingleImage segue")
                 return
             }
             
@@ -62,6 +66,8 @@ extension ImagesListViewController: UITableViewDataSource {
 extension ImagesListViewController {
     func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
         guard let image = UIImage(named: photosName[indexPath.row]) else {
+//            self.logger.error("[ImagesListViewController.configCell]: Error – image not found with name \(photosName[indexPath.row])")
+            print("[ImagesListViewController.configCell]: Error – image not found with name \(photosName[indexPath.row])")
             return
         }
         
@@ -82,6 +88,8 @@ extension ImagesListViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         guard let image = UIImage(named: photosName[indexPath.row]) else {
+//            self.logger.error("[ImagesListViewController.heightForRow]: Error – image not found with name \(photosName[indexPath.row])")
+            print("[ImagesListViewController.heightForRow]: Error – image not found with name \(photosName[indexPath.row])")
             return 0
         }
         

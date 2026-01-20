@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import Logging
 
 // MARK: - Constants
 enum WebViewConstants {
@@ -16,6 +17,8 @@ protocol WebViewViewControllerDelegate: AnyObject {
 // MARK: - WebViewViewController
 final class WebViewViewController: UIViewController {
     
+    private let logger = Logger(label: "WebViewViewController")
+    
     // MARK: Outlets
     @IBOutlet private var webView: WKWebView!
     @IBOutlet private var progressView: UIProgressView!
@@ -24,7 +27,7 @@ final class WebViewViewController: UIViewController {
     weak var delegate: WebViewViewControllerDelegate?
     
     // MARK: Private properties
-    private var progressObservation: NSKeyValueObservation?
+    private var estimatedProgressObservation: NSKeyValueObservation?
     
     // MARK: Lifecycle
     override func viewDidLoad() {
@@ -36,11 +39,6 @@ final class WebViewViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         observeWebViewProgress()
-    }
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        progressObservation = nil
     }
     
 }
@@ -59,7 +57,6 @@ extension WebViewViewController: WKNavigationDelegate {
             decisionHandler(.allow)
         }
     }
-    
 }
 
 // MARK: - Private helpers
@@ -71,7 +68,8 @@ extension WebViewViewController {
     
     private func loadAuthPage() {
         guard var components = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
-            assertionFailure("WebViewViewController: failed to create URLComponents")
+//            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to create URLComponents")
+            print("[WebViewViewController.loadAuthPage]: Error – failed to create URLComponents")
             return
         }
         
@@ -83,32 +81,36 @@ extension WebViewViewController {
         ]
         
         guard let url = components.url else {
-            assertionFailure("WebViewViewController: failed to build auth URL")
+//            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to build auth URL")
+            print("[WebViewViewController.loadAuthPage]: Error – failed to build auth URL")
             return
         }
-        
         webView.load(URLRequest(url: url))
-        updateProgress(0)
     }
     
     private func observeWebViewProgress() {
-        progressObservation = webView.observe(
+        estimatedProgressObservation = webView.observe(
             \.estimatedProgress,
              options: [.new]
         ) { [weak self] webView, _ in
-            self?.updateProgress(webView.estimatedProgress)
+            guard let self = self else {
+                print("[WebViewViewController.observeWebViewProgress]: Error – self deallocated during KVO callback")
+                return
+            }
+            self.updateProgress()
         }
+        updateProgress()
     }
     
-    private func updateProgress(_ progress: Double) {
-        progressView.progress = Float(progress)
-        progressView.isHidden = abs(progress - 1.0) < 0.0001
+    private func updateProgress() {
+        progressView.progress = Float(webView.estimatedProgress)
+        progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
     }
     
     private func extractCode(from navigationAction: WKNavigationAction) -> String? {
         guard
             let url = navigationAction.request.url,
-            let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            let components = URLComponents(string: url.absoluteString),
             components.path == WebViewConstants.redirectPath,
             let queryItems = components.queryItems,
             let codeItem = queryItems.first(where: { $0.name == "code" })

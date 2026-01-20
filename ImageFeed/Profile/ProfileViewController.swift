@@ -1,7 +1,12 @@
 import UIKit
+import WebKit
+import Kingfisher
 
 class ProfileViewController: UIViewController {
     
+    private var profileImageServiceObserver: NSObjectProtocol?
+    private var profileObserver: NSObjectProtocol?
+
     // MARK: - UI Elements
     private var profileImageView: UIImageView!
     private var logoutButton: UIButton!
@@ -14,14 +19,68 @@ class ProfileViewController: UIViewController {
     
     // MARK: - Properties
     private let photosName: [String] = Array(0..<20).map{ "\($0)" }
+    private let tokenStorage = OAuth2TokenStorage.shared
+    private let profileService = ProfileService.shared
     
     // MARK: - Constants
     private enum ProfileConstants {
-        static let nameText = "Екатерина Новикова"
-        static let loginText = "@ekaterina_nov"
-        static let descriptionText = "Hello, world!"
         static let favoritesTitle = "Избранное"
         static let favoritesCount = "27"
+    }
+    
+    private func updateProfileDetails(with profile: Profile) {
+        nameLabel.text = profile.name.isEmpty ? "Имя не указано" : profile.name
+        loginNameLabel.text = profile.loginName.isEmpty ? "@неизвестный_пользователь" : profile.loginName
+        descriptionLabel.text = (profile.bio?.isEmpty ?? true) ? "Профиль не заполнен" : profile.bio
+       
+    }
+    
+    private func updateAvatar() {
+        guard
+            let profileImageURL = ProfileImageService.shared.avatarURL,
+            let imageUrl = URL(string: profileImageURL)
+        else { return }
+
+        print("imageUrl: \(imageUrl)")
+
+        let placeholderImage = UIImage(resource: .avatarPlaceholder)
+            .withTintColor(.lightGray, renderingMode: .alwaysOriginal)
+            .withConfiguration(UIImage.SymbolConfiguration(pointSize: 70, weight: .regular, scale: .large))
+
+        let processor = RoundCornerImageProcessor(cornerRadius: 35)
+        profileImageView.kf.indicatorType = .activity
+        profileImageView.kf.setImage(
+            with: imageUrl,
+            placeholder: placeholderImage,
+            options: [
+                .processor(processor),
+                .scaleFactor(UIScreen.main.scale),
+                .cacheOriginalImage,
+                .forceRefresh
+            ]) { result in
+
+                switch result {
+                case .success(let value):
+                    print(value.image)
+                    print(value.cacheType)
+                    print(value.source)
+
+                case .failure(let error):
+                    print(error)
+                }
+            }
+    }
+    
+    private func renderProfileIfAvailable()  {
+        guard let profile = profileService.profile else { return }
+        updateProfileDetails(with: profile)
+    }
+    
+    private func fetchAvatarIfNeeded() {
+        guard let profile = profileService.profile else { return }
+        ProfileImageService.shared.fetchProfileImageURL(
+            username: profile.username
+        ) { _ in }
     }
     
     private lazy var dateFormatter: DateFormatter = {
@@ -34,6 +93,7 @@ class ProfileViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+ 
         setupProfileImageView()
         setupLogoutButton()
         setupNameLabel()
@@ -42,6 +102,35 @@ class ProfileViewController: UIViewController {
         setupFavorites()
         setupFavoritesValue()
         setupFavoritesTableView()
+        
+        setupObservers()
+        
+        renderProfileIfAvailable()
+        updateAvatar()
+        
+        fetchAvatarIfNeeded()
+    }
+    
+    private func setupObservers() {
+        profileObserver = NotificationCenter.default
+            .addObserver(
+                forName: ProfileService.profileDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self else { return }
+                self.renderProfileIfAvailable()
+            }
+        
+        profileImageServiceObserver = NotificationCenter.default
+            .addObserver(
+                forName: ProfileImageService.didChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self = self else { return }
+                self.updateAvatar()
+            }
     }
     
     // MARK: - UI Setup
@@ -76,7 +165,6 @@ class ProfileViewController: UIViewController {
     
     func setupNameLabel() {
         nameLabel = UILabel()
-        nameLabel.text = ProfileConstants.nameText
         nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
         nameLabel.textColor = UIColor(resource: .ypWhite)
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -90,7 +178,6 @@ class ProfileViewController: UIViewController {
     
     func setupLoginNameLabel() {
         loginNameLabel = UILabel()
-        loginNameLabel.text = ProfileConstants.loginText
         loginNameLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         loginNameLabel.textColor = UIColor(resource: .ypGray)
         loginNameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -104,7 +191,6 @@ class ProfileViewController: UIViewController {
     
     func setupDescriptionLabel() {
         descriptionLabel = UILabel()
-        descriptionLabel.text = ProfileConstants.descriptionText
         descriptionLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         descriptionLabel.textColor = UIColor(resource: .ypWhite)
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -169,8 +255,57 @@ class ProfileViewController: UIViewController {
     }
     
     // MARK: - Actions
+    // Временная реализация логаута
     @objc private func didTapLogoutButton() {
-        print("logout")
+        tokenStorage.token = nil
+
+        clearWebViewData { [weak self] in
+            guard self != nil else { return }
+
+            guard
+                let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                let window = windowScene.windows.first
+            else {
+                assertionFailure("Не удалось получить window")
+                return
+            }
+
+            let splashViewController = SplashViewController()
+            window.rootViewController = splashViewController
+            window.makeKeyAndVisible()
+        }
+    }
+    
+    
+    deinit {
+        if let profileObserver {
+            NotificationCenter.default.removeObserver(profileObserver)
+        }
+        if let profileImageServiceObserver {
+            NotificationCenter.default.removeObserver(profileImageServiceObserver)
+        }
+    }
+    
+}
+
+extension ProfileViewController {
+    // Временная реализация - почистить куки WebView
+    private func clearWebViewData(completion: @escaping () -> Void) {
+        let dataStore = WKWebsiteDataStore.default()
+        
+        let dataTypes: Set<String> = [
+            WKWebsiteDataTypeCookies,
+            WKWebsiteDataTypeLocalStorage,
+            WKWebsiteDataTypeSessionStorage,
+            WKWebsiteDataTypeIndexedDBDatabases,
+            WKWebsiteDataTypeWebSQLDatabases
+        ]
+        
+        dataStore.fetchDataRecords(ofTypes: dataTypes) { records in
+            dataStore.removeData(ofTypes: dataTypes, for: records) {
+                completion()
+            }
+        }
     }
 }
 
