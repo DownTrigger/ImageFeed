@@ -247,7 +247,7 @@ class ProfileViewController: UIViewController {
         favoritesTableView = UITableView()
         favoritesTableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(favoritesTableView)
-        favoritesTableView.register(ProfileCell.self, forCellReuseIdentifier: ProfileCell.reuseIdentifier)
+        favoritesTableView.register(PhotoCell.self, forCellReuseIdentifier: PhotoCell.reuseIdentifier)
         favoritesTableView.delegate = self
         favoritesTableView.dataSource = self
         favoritesTableView.backgroundColor = UIColor(resource: .ypBlack)
@@ -311,30 +311,27 @@ extension ProfileViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: ProfileCell.reuseIdentifier, for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: PhotoCell.reuseIdentifier, for: indexPath)
         
-        guard let ProfileCell = cell as? ProfileCell else {
+        guard let PhotoCell = cell as? PhotoCell else {
             return UITableViewCell()
         }
         
-        configCell(for: ProfileCell, with: indexPath)
-        return ProfileCell
+        configCell(for: PhotoCell, with: indexPath)
+        return PhotoCell
     }
 }
 
 // MARK: - UITableViewDelegate
 extension ProfileViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        
-        guard let singleImageVC = storyboard.instantiateViewController(withIdentifier: "SingleImageViewController") as? SingleImageViewController else {
-            return
-        }
-        
-        let imageName = photosName[indexPath.row]
-        singleImageVC.image = UIImage(named: imageName)
-        
-        present(singleImageVC, animated: true)
+        tableView.deselectRow(at: indexPath, animated: true)
+
+        let singleImageViewController = SingleImageViewController()
+        singleImageViewController.hidesBottomBarWhenPushed = true
+        singleImageViewController.image = UIImage(named: photosName[indexPath.row])
+
+        navigationController?.pushViewController(singleImageViewController, animated: true)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -353,7 +350,7 @@ extension ProfileViewController: UITableViewDelegate {
 
 // MARK: - Cell Configuration
 extension ProfileViewController {
-    func configCell(for cell: ProfileCell, with indexPath: IndexPath) {
+    func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
         guard let image = UIImage(named: photosName[indexPath.row]) else {
             return
         }

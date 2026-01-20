@@ -17,12 +17,11 @@ protocol WebViewViewControllerDelegate: AnyObject {
 // MARK: - WebViewViewController
 final class WebViewViewController: UIViewController {
     
+    private let webView = WKWebView()
+    private let progressView = UIProgressView(progressViewStyle: .default)
+    
     // MARK: - Logger
     private let logger = Logger(label: "WebViewViewController")
-    
-    // MARK: - Outlets
-    @IBOutlet private var webView: WKWebView!
-    @IBOutlet private var progressView: UIProgressView!
     
     // MARK: - Dependencies
     weak var delegate: WebViewViewControllerDelegate?
@@ -33,6 +32,8 @@ final class WebViewViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupNavigationBar()
+        setupUI()
         configureWebView()
         loadAuthPage()
     }
@@ -42,34 +43,67 @@ final class WebViewViewController: UIViewController {
         observeWebViewProgress()
     }
     
-}
-
-// MARK: - WKNavigationDelegate
-extension WebViewViewController: WKNavigationDelegate {
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-    ) {
-        if let code = extractCode(from: navigationAction) {
-            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
-            decisionHandler(.cancel)
-        } else {
-            decisionHandler(.allow)
-        }
+    @objc private func didTapBack() {
+        dismiss(animated: true)
     }
-}
+    
+    
+    private func setupNavigationBar() {
+        let backButton = UIButton(type: .system)
+        backButton.setImage(
+            UIImage(resource: .iconBackChevron).withRenderingMode(.alwaysTemplate),
+            for: .normal
+        )
+        backButton.tintColor = UIColor(resource: .ypBlack)
 
-// MARK: - Private helpers
-extension WebViewViewController {
+        backButton.addTarget(
+            self,
+            action: #selector(didTapBack),
+            for: .touchUpInside
+        )
+
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: backButton)
+
+        configureTransparentNavigationBar()
+    }
+    
+    private func configureTransparentNavigationBar() {
+        navigationController?.navigationBar.isTranslucent = true
+        navigationController?.navigationBar.setBackgroundImage(UIImage(), for: .default)
+        navigationController?.navigationBar.shadowImage = UIImage()
+    }
+    
+    private func setupUI() {
+        view.backgroundColor = .white
+        
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        progressView.progressTintColor = UIColor(resource: .ypBlack)
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        progressView.isHidden = true
+        
+        view.addSubview(progressView)
+        view.addSubview(webView)
+        
+        NSLayoutConstraint.activate([
+            progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            
+            webView.topAnchor.constraint(equalTo: progressView.bottomAnchor),
+            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
     
     private func configureWebView() {
         webView.navigationDelegate = self
+        webView.allowsBackForwardNavigationGestures = true
     }
     
     private func loadAuthPage() {
         guard var components = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
-//            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to create URLComponents")
+            //            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to create URLComponents")
             print("[WebViewViewController.loadAuthPage]: Error – failed to create URLComponents")
             return
         }
@@ -82,12 +116,13 @@ extension WebViewViewController {
         ]
         
         guard let url = components.url else {
-//            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to build auth URL")
+            //            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to build auth URL")
             print("[WebViewViewController.loadAuthPage]: Error – failed to build auth URL")
             return
         }
         webView.load(URLRequest(url: url))
     }
+    
     
     
     private func observeWebViewProgress() {
@@ -99,6 +134,10 @@ extension WebViewViewController {
             self.updateProgress()
         }
         updateProgress()
+    }
+    
+    deinit {
+        estimatedProgressObservation?.invalidate()
     }
     
     private func updateProgress() {
@@ -119,5 +158,23 @@ extension WebViewViewController {
         
         return codeItem.value
     }
-    
 }
+
+
+
+// MARK: - WKNavigationDelegate
+extension WebViewViewController: WKNavigationDelegate {
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        if let code = extractCode(from: navigationAction) {
+            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
+            decisionHandler(.cancel)
+        } else {
+            decisionHandler(.allow)
+        }
+    }
+}
+

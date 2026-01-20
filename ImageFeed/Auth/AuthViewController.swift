@@ -8,9 +8,9 @@ protocol AuthViewControllerDelegate: AnyObject {
 
 // MARK: - AuthViewController
 final class AuthViewController: UIViewController {
-    
-    // MARK: Constants
-    private let showWebViewSegueIdentifier = "ShowWebView"
+
+    private let logoImageView = UIImageView()
+    private let loginButton = UIButton()
     
     // MARK: - Logger
     private let logger = Logger(label: "AuthViewController")
@@ -21,25 +21,67 @@ final class AuthViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        configureBackButton()
+        view.backgroundColor = UIColor(resource: .ypBlack)
+        setupUI()
+        setupConstraints()
     }
     
     // MARK: - Navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == showWebViewSegueIdentifier {
-            segue.destination.modalPresentationStyle = .fullScreen
+    private func showWebView() {
+        let webViewViewController = WebViewViewController()
+        webViewViewController.delegate = self
+        
+        let navigationController = UINavigationController(
+            rootViewController: webViewViewController
+        )
+        navigationController.modalPresentationStyle = .fullScreen
+
+        present(navigationController, animated: true)
+    }
+    
+    // MARK: - Action
+    @objc private func didTapLoginButton() {
+        showWebView()
+    }
+    
+    // MARK: - UI Elements
+    private func setupLogoImageView() {
+        logoImageView.image = UIImage(resource: .logoAauthScreen)
+        logoImageView.contentMode = .scaleAspectFit
+        logoImageView.translatesAutoresizingMaskIntoConstraints = false
+    }
+    
+    private func setupLoginButton() {
+        loginButton.setTitle("Войти", for: .normal)
+        loginButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
+        loginButton.setTitleColor(.black, for: .normal)
+        loginButton.backgroundColor = .white
+        loginButton.layer.cornerRadius = 16
+        loginButton.translatesAutoresizingMaskIntoConstraints = false
+    }
+    
+    // MARK: - UI Setup
+    private func setupUI() {
+        setupLogoImageView()
+        setupLoginButton()
+        
+        view.addSubview(logoImageView)
+        view.addSubview(loginButton)
+        loginButton.addTarget(self, action: #selector(didTapLoginButton), for: .touchUpInside)
+    }
+    
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            logoImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -100),
+            logoImageView.widthAnchor.constraint(equalToConstant: 60),
+            logoImageView.heightAnchor.constraint(equalToConstant: 60),
             
-            guard
-                let webViewViewController = segue.destination as? WebViewViewController
-            else {
-                // self.logger.error("[AuthViewController.prepare]: Error – invalid destination for ShowWebView segue")
-                print("[AuthViewController.prepare]: Error – invalid destination for ShowWebView segue")
-                return
-            }
-            webViewViewController.delegate = self
-        } else {
-            super.prepare(for: segue, sender: sender)
-        }
+            loginButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            loginButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            loginButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -124),
+            loginButton.heightAnchor.constraint(equalToConstant: 48)
+        ])
     }
     
 }
@@ -47,23 +89,11 @@ final class AuthViewController: UIViewController {
 // MARK: - WebViewViewControllerDelegate
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-        vc.dismiss(animated: true)
+//        vc.dismiss(animated: true)
         delegate?.authViewController(self, didReceiveCode: code)
     }
     
     func webViewViewControllerDidCancel(_ vc: WebViewViewController) {
         vc.dismiss(animated: true)
     }
-}
-
-// MARK: - UI configuration
-extension AuthViewController {
-    
-    private func configureBackButton() {
-        navigationController?.navigationBar.backIndicatorImage = UIImage(resource: .iconBackChevronWV)
-        navigationController?.navigationBar.backIndicatorTransitionMaskImage = UIImage(resource: .iconBackChevronWV)
-        navigationItem.backBarButtonItem = UIBarButtonItem( title: "", style: .plain, target: nil, action: nil)
-        navigationItem.backBarButtonItem?.tintColor = UIColor(resource: .ypBlack)
-    }
-    
 }

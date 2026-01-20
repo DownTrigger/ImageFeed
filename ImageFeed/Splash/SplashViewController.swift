@@ -49,12 +49,9 @@ final class SplashViewController: UIViewController {
     // MARK: - Navigation
     
     private func showAuthViewController() {
-        let storyboard = UIStoryboard(name: "Main", bundle: .main)
-        guard let authViewController = storyboard.instantiateViewController(withIdentifier: "AuthViewController") as? AuthViewController else {
-            assertionFailure("Не удалось найти AuthViewController по идентификатору")
-            return
-        }
+        let authViewController = AuthViewController()
         authViewController.delegate = self
+        
         let navigationController = UINavigationController(rootViewController: authViewController)
         navigationController.modalPresentationStyle = .fullScreen
         present(navigationController, animated: true)
@@ -71,9 +68,9 @@ final class SplashViewController: UIViewController {
             return
         }
         
-        let tabBarController = UIStoryboard(name: "Main", bundle: .main)
-            .instantiateViewController(withIdentifier: "TabBarViewController")
+        let tabBarController = TabBarController()
         window.rootViewController = tabBarController
+        window.makeKeyAndVisible()
     }
     
     // MARK: - Network
@@ -105,7 +102,7 @@ final class SplashViewController: UIViewController {
         
         NSLayoutConstraint.activate([
             imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -100),
         ])
     }
     
@@ -114,35 +111,35 @@ final class SplashViewController: UIViewController {
 // MARK: - AuthViewControllerDelegate
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ vc: AuthViewController, didReceiveCode code: String) {
-        vc.dismiss(animated: true) { [weak self] in
+        
+        UIBlockingProgressHUD.show()
+        authService.fetchOAuthToken(code) { [weak self] result in
             guard let self else { return }
-            
-            UIBlockingProgressHUD.show()
-            authService.fetchOAuthToken(code) { [weak self] result in
-                UIBlockingProgressHUD.dismiss()
-                
-                guard let self else { return }
-                
-                switch result {
-                case .success:
-                    guard let token = self.tokenStorage.token else {
-//                        self.logger.error("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
-                        print("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
-                        return
-                    }
-                    self.fetchProfile(token: token)
+           
+            DispatchQueue.main.async {
+                self.dismiss(animated: true) {
+                    UIBlockingProgressHUD.dismiss()
                     
-                case let .failure(error):
-//                    self.logger.error("[SplashViewController.fetchOAuthToken]: Error – \(error)")
-                    print("[SplashViewController.fetchOAuthToken]: Error – \(error)")
-                    self.showAuthErrorAlert {
-                        self.showAuthViewController()
+                    switch result {
+                    case .success:
+                        guard let token = self.tokenStorage.token else {
+                            print("[SplashViewController.fetchOAuthToken]: Error – token is nil after successful auth")
+                            return
+                        }
+                        self.fetchProfile(token: token)
+                        
+                    case let .failure(error):
+                        print("[SplashViewController.fetchOAuthToken]: Error – \(error)")
+                        self.showAuthErrorAlert {
+                            self.showAuthViewController()
+                        }
                     }
                 }
             }
         }
     }
-    
+
+
     func showAuthErrorAlert(onDismiss: @escaping () -> Void) {
         let alert = UIAlertController(
             title: "Что-то пошло не так(",

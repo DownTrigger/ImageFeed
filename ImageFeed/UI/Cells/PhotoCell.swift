@@ -1,9 +1,25 @@
 import UIKit
 
-final class ProfileCell: UITableViewCell {
+final class PhotoCell: UITableViewCell {
     
     // MARK: - Identifier
-    static let reuseIdentifier = "ProfileCell"
+    static let reuseIdentifier = "PhotoCell"
+    
+    // MARK: - Configuration
+    func configure(
+        image: UIImage?,
+        dateText: String,
+        isLiked: Bool
+    ) {
+        cellImage.image = image
+        dateLabel.text = dateText
+
+        let likeImage = isLiked
+            ? UIImage(resource: .iconLikeFilled)
+            : UIImage(resource: .iconLike)
+
+        likeButton.setImage(likeImage, for: .normal)
+    }
     
     // MARK: - Private UI Elements
     let cellImage: UIImageView = {
@@ -78,7 +94,7 @@ final class ProfileCell: UITableViewCell {
             likeButton.trailingAnchor.constraint(equalTo: cellImage.trailingAnchor),
             likeButton.topAnchor.constraint(equalTo: cellImage.topAnchor),
             likeButton.widthAnchor.constraint(equalToConstant: 44),
-            likeButton.widthAnchor.constraint(equalToConstant: 44),
+            likeButton.heightAnchor.constraint(equalToConstant: 44),
             
             dateLabel.leadingAnchor.constraint(equalTo: cellImage.leadingAnchor, constant: 8),
             dateLabel.bottomAnchor.constraint(equalTo: cellImage.bottomAnchor, constant: -8),
