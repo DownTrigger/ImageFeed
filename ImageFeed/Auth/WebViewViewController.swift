@@ -17,8 +17,21 @@ protocol WebViewViewControllerDelegate: AnyObject {
 // MARK: - WebViewViewController
 final class WebViewViewController: UIViewController {
     
-    private let webView = WKWebView()
-    private let progressView = UIProgressView(progressViewStyle: .default)
+    private lazy var webView: WKWebView = {
+        let webView = WKWebView()
+        webView.navigationDelegate = self
+        webView.allowsBackForwardNavigationGestures = true
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        return webView
+    }()
+    
+    private lazy var progressView: UIProgressView = {
+        let progressView = UIProgressView(progressViewStyle: .default)
+        progressView.progressTintColor = UIColor(resource: .ypBlack)
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        progressView.isHidden = true
+        return progressView
+    }()
     
     // MARK: - Logger
     private let logger = Logger(label: "WebViewViewController")
@@ -34,7 +47,6 @@ final class WebViewViewController: UIViewController {
         super.viewDidLoad()
         setupNavigationBar()
         setupUI()
-        configureWebView()
         loadAuthPage()
     }
     
@@ -47,7 +59,6 @@ final class WebViewViewController: UIViewController {
         dismiss(animated: true)
     }
     
-    
     private func setupNavigationBar() {
         let backButton = UIButton(type: .system)
         backButton.setImage(
@@ -55,15 +66,14 @@ final class WebViewViewController: UIViewController {
             for: .normal
         )
         backButton.tintColor = UIColor(resource: .ypBlack)
-
-        backButton.addTarget(
-            self,
-            action: #selector(didTapBack),
-            for: .touchUpInside
-        )
-
+        
+        if #available(iOS 14.0, *) {
+            backButton.addAction(UIAction { [weak self] _ in self?.didTapBack() }, for: .touchUpInside)
+        } else {
+            backButton.addTarget(self, action: #selector(didTapBack), for: .touchUpInside)
+        }
+        
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: backButton)
-
         configureTransparentNavigationBar()
     }
     
@@ -75,12 +85,6 @@ final class WebViewViewController: UIViewController {
     
     private func setupUI() {
         view.backgroundColor = .white
-        
-        webView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.progressTintColor = UIColor(resource: .ypBlack)
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.isHidden = true
-        
         view.addSubview(progressView)
         view.addSubview(webView)
         
@@ -94,11 +98,6 @@ final class WebViewViewController: UIViewController {
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-    }
-    
-    private func configureWebView() {
-        webView.navigationDelegate = self
-        webView.allowsBackForwardNavigationGestures = true
     }
     
     private func loadAuthPage() {
@@ -122,8 +121,6 @@ final class WebViewViewController: UIViewController {
         }
         webView.load(URLRequest(url: url))
     }
-    
-    
     
     private func observeWebViewProgress() {
         estimatedProgressObservation = webView.observe(
@@ -159,8 +156,6 @@ final class WebViewViewController: UIViewController {
         return codeItem.value
     }
 }
-
-
 
 // MARK: - WKNavigationDelegate
 extension WebViewViewController: WKNavigationDelegate {

@@ -27,14 +27,14 @@ final class ProfileService {
         
         // Build profile request
         guard let request = makeProfileRequest(token: token) else {
-//            self.logger.error("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
+            //            self.logger.error("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
             print("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
             DispatchQueue.main.async {
                 completion(.failure(URLError(.badURL)))
             }
             return
         }
-
+        
         let task = urlSession.objectTask(
             for: request
         ) { [weak self] (result: Result<ProfileResult, Error>) in
@@ -66,7 +66,7 @@ final class ProfileService {
                 }
             }
         }
-
+        
         self.task = task
         task.resume()
     }
@@ -74,7 +74,7 @@ final class ProfileService {
     // MARK: - Private Helpers
     private func makeProfileRequest(token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/me") else {
-//            self.logger.error("[ProfileService.makeProfileRequest]: NetworkError – invalidURL")
+            //            self.logger.error("[ProfileService.makeProfileRequest]: NetworkError – invalidURL")
             print("[ProfileService.makeProfileRequest]: NetworkError – invalidURL")
             return nil
         }

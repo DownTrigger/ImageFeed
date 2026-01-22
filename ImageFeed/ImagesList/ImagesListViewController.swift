@@ -1,16 +1,28 @@
 import UIKit
 import Logging
 
-class ImagesListViewController: UIViewController {
+final class ImagesListViewController: UIViewController {
     
     private let logger = Logger(label: "ImagesListViewController")
     
     // MARK: - UI
-    private let tableView = UITableView()
+    private lazy var tableView: UITableView = {
+        let tableView = UITableView()
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.separatorStyle = .none
+        tableView.backgroundColor = UIColor(resource: .ypBlack)
+        tableView.contentInsetAdjustmentBehavior = .never
+        tableView.register(PhotoCell.self, forCellReuseIdentifier: PhotoCell.reuseIdentifier)
+        return tableView
+    }()
+    
     private var didAdjustInitialContentOffset = false
     
     // MARK: - Properties
     private let photosName: [String] = Array(0..<20).map{ "\($0)" }
+    private let today = Date()
     
     private lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -27,7 +39,7 @@ class ImagesListViewController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-
+        
         let topInset = view.safeAreaInsets.top
         
         if tableView.contentInset.top != topInset {
@@ -45,7 +57,7 @@ class ImagesListViewController: UIViewController {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)
     }
-
+    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: false)
@@ -54,7 +66,6 @@ class ImagesListViewController: UIViewController {
     // MARK: - Setup
     private func setupTableView() {
         view.addSubview(tableView)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -62,18 +73,6 @@ class ImagesListViewController: UIViewController {
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
-        
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.separatorStyle = .none
-        tableView.backgroundColor = UIColor(resource: .ypBlack)
-        
-        tableView.contentInsetAdjustmentBehavior = .never
-        
-        tableView.register(
-            PhotoCell.self,
-            forCellReuseIdentifier: PhotoCell.reuseIdentifier
-        )
     }
 }
 
@@ -98,16 +97,16 @@ extension ImagesListViewController: UITableViewDataSource {
 // MARK: - Cell Configuration
 extension ImagesListViewController {
     func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
-            let image = UIImage(named: photosName[indexPath.row])
-            let dateText = dateFormatter.string(from: Date())
-            let isLiked = true
-
-            cell.configure(
-                image: image,
-                dateText: dateText,
-                isLiked: isLiked
-            )
-        }
+        let image = UIImage(named: photosName[indexPath.row])
+        let dateText = dateFormatter.string(from: today)
+        let isLiked = true
+        
+        cell.configure(
+            image: image,
+            dateText: dateText,
+            isLiked: isLiked
+        )
+    }
 }
 
 // MARK: - UITableViewDelegate
@@ -121,7 +120,7 @@ extension ImagesListViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         guard let image = UIImage(named: photosName[indexPath.row]) else {
-//            self.logger.error("[ImagesListViewController.heightForRow]: Error – image not found with name \(photosName[indexPath.row])")
+            //            self.logger.error("[ImagesListViewController.heightForRow]: Error – image not found with name \(photosName[indexPath.row])")
             print("[ImagesListViewController.heightForRow]: Error – image not found with name \(photosName[indexPath.row])")
             return 0
         }

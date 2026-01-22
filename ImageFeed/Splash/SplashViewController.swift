@@ -15,7 +15,12 @@ final class SplashViewController: UIViewController {
     private var isAuthInProgress = false
     
     // MARK: - UI
-    private var imageView: UIImageView!
+    private lazy var imageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(resource: .logoSplashScreen)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
     
     // MARK: - Lifecycle
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -24,14 +29,14 @@ final class SplashViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupImageView()
+        setupConstraints()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
         guard !isAuthInProgress else { return }
-
+        
         if let token = tokenStorage.token {
             isAuthInProgress = true
             UIBlockingProgressHUD.show()
@@ -48,7 +53,6 @@ final class SplashViewController: UIViewController {
     }
     
     // MARK: - Navigation
-    
     private func showAuthViewController() {
         let authViewController = AuthViewController()
         authViewController.delegate = self
@@ -64,7 +68,7 @@ final class SplashViewController: UIViewController {
             let sceneDelegate = windowScene.delegate as? SceneDelegate,
             let window = sceneDelegate.window
         else {
-//            self.logger.error("[SplashViewController.switchToTabBarController]: Error – window is nil")
+            //            self.logger.error("[SplashViewController.switchToTabBarController]: Error – window is nil")
             print("[SplashViewController.switchToTabBarController]: Error – window is nil")
             return
         }
@@ -77,18 +81,18 @@ final class SplashViewController: UIViewController {
     // MARK: - Network
     private func fetchProfile(token: String) {
         profileService.fetchProfile(token) { [weak self] result in
-
+            
             guard let self else { return }
-
+            
             switch result {
             case let .success(profile):
                 UIBlockingProgressHUD.dismiss()
                 ProfileImageService.shared.fetchProfileImageURL(username: profile.username) { _ in }
                 self.switchToTabBarController()
-
+                
             case let .failure(error):
                 UIBlockingProgressHUD.dismiss()
-//                self.logger.error("[SplashViewController.fetchProfile]: Error – \(error.localizedDescription)")
+                //                self.logger.error("[SplashViewController.fetchProfile]: Error – \(error.localizedDescription)")
                 print("[SplashViewController.fetchProfile]: Error – \(error.localizedDescription)")
                 self.showAuthViewController()
             }
@@ -96,11 +100,7 @@ final class SplashViewController: UIViewController {
     }
     
     // MARK: - UI Helpers
-    
-    func setupImageView() {
-        let imageSplashScreenLogo = UIImage(resource: .logoSplashScreen)
-        imageView = UIImageView(image: imageSplashScreenLogo)
-        imageView.translatesAutoresizingMaskIntoConstraints = false
+    func setupConstraints() {
         view.addSubview(imageView)
         
         NSLayoutConstraint.activate([
@@ -114,15 +114,17 @@ final class SplashViewController: UIViewController {
 // MARK: - AuthViewControllerDelegate
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ vc: AuthViewController, didReceiveCode code: String) {
-        
         UIBlockingProgressHUD.show()
         authService.fetchOAuthToken(code) { [weak self] result in
-            guard let self else { return }
-           
             DispatchQueue.main.async {
+                guard let self else {
+                    UIBlockingProgressHUD.dismiss()
+                    return
+                }
+
                 self.dismiss(animated: true) {
                     UIBlockingProgressHUD.dismiss()
-                    
+
                     switch result {
                     case .success:
                         guard let token = self.tokenStorage.token else {
@@ -130,7 +132,7 @@ extension SplashViewController: AuthViewControllerDelegate {
                             return
                         }
                         self.fetchProfile(token: token)
-                        
+
                     case let .failure(error):
                         print("[SplashViewController.fetchOAuthToken]: Error – \(error)")
                         self.showAuthErrorAlert {
@@ -142,7 +144,6 @@ extension SplashViewController: AuthViewControllerDelegate {
         }
     }
 
-
     func showAuthErrorAlert(onDismiss: @escaping () -> Void) {
         let alert = UIAlertController(
             title: "Что-то пошло не так(",
@@ -153,7 +154,7 @@ extension SplashViewController: AuthViewControllerDelegate {
         let action = UIAlertAction(title: "Ок", style: .default) { _ in
             onDismiss()
         }
-
+        
         alert.addAction(action)
         present(alert, animated: true)
     }

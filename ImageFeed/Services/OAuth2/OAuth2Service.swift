@@ -24,7 +24,7 @@ final class OAuth2Service {
         
         // Prevent duplicate requests with the same code
         guard lastCode != code else {
-//            self.logger.error("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")
+            //            self.logger.error("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")
             print("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")
             return
         }
@@ -37,7 +37,7 @@ final class OAuth2Service {
         
         // Build OAuth token request
         guard let request = makeOAuthTokenRequest(code: code) else {
-//            self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
+            //            self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
             print("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
             DispatchQueue.main.async {
                 completion(.failure(NetworkError.invalidRequest))
@@ -47,30 +47,28 @@ final class OAuth2Service {
         
         // Perform network request
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuth2TokenResponseBody, Error>) in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                
-                guard self.lastCode == requestCode else {
-                    return
-                }
+            guard
+                let self = self,
+                self.lastCode == requestCode
+            else {
+                return
+            }
                 
                 // Handle network result
                 switch result {
                 case .success(let decoded):
-//                    completion(.failure(NetworkError.invalidRequest)) // Потестить алерт
                     let token = decoded.accessToken
                     self.tokenStorage.token = token
                     completion(.success(token))
                     
                 case .failure(let error):
-//                    self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
+                    //                    self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
                     print("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
                     completion(.failure(error))
                 }
-                
+    
                 self.task = nil
                 self.lastCode = nil
-            }
         }
         self.task = task
         task.resume()
@@ -79,7 +77,7 @@ final class OAuth2Service {
     // MARK: - Private helpers
     private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard var components = URLComponents(string: "https://unsplash.com/oauth/token") else {
-//            self.logger.error("[OAuth2Service.makeOAuthTokenRequest]: Failed to create URLComponents")
+            //            self.logger.error("[OAuth2Service.makeOAuthTokenRequest]: Failed to create URLComponents")
             print("[OAuth2Service.makeOAuthTokenRequest]: Failed to create URLComponents")
             return nil
         }
@@ -93,7 +91,7 @@ final class OAuth2Service {
         ]
         
         guard let url = components.url else {
-//            self.logger.error("[OAuth2Service.makeOAuthTokenRequest]: Failed to build URL")
+            //            self.logger.error("[OAuth2Service.makeOAuthTokenRequest]: Failed to build URL")
             print("[OAuth2Service.makeOAuthTokenRequest]: Failed to build URL")
             return nil
         }

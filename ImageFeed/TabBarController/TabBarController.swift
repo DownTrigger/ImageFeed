@@ -3,11 +3,11 @@ import UIKit
 final class TabBarController: UITabBarController {
     
     override func viewDidLoad() {
-            super.viewDidLoad()
+        super.viewDidLoad()
         configureTabBarAppearance()
-            setupViewControllers()
-        }
-        
+        setupViewControllers()
+    }
+    
     private func configureTabBarAppearance() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -20,8 +20,8 @@ final class TabBarController: UITabBarController {
         tabBar.unselectedItemTintColor = UIColor(resource: .ypWhite)
         
         if #available(iOS 15.0, *) {
-                tabBar.scrollEdgeAppearance = appearance
-            }
+            tabBar.scrollEdgeAppearance = appearance
+        }
     }
     
     private func setupViewControllers() {

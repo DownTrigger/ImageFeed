@@ -3,10 +3,47 @@ import UIKit
 final class SingleImageViewController: UIViewController {
     
     // MARK: UI Elements
-    private let scrollView = UIScrollView()
-    private let imageView = UIImageView()
-    private let shareButton = UIButton()
-    private let likeButton = UIButton()
+    private lazy var scrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.delegate = self
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        return scrollView
+    }()
+    
+    private lazy var imageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFit
+        return imageView
+    }()
+    
+    private lazy var shareButton: UIButton = {
+        let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setImage(UIImage(resource: .iconCircleShare), for: .normal)
+        
+        if #available(iOS 14.0, *) {
+            button.addAction(UIAction { [weak self] _ in self?.didTapShare() }, for: .touchUpInside)
+        } else {
+            button.addTarget(self, action: #selector(didTapShare), for: .touchUpInside)
+        }
+        
+        return button
+    }()
+    
+    private lazy var likeButton: UIButton = {
+        let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setImage(UIImage(resource: .iconCircleLike), for: .normal)
+        
+        if #available(iOS 14.0, *) {
+            button.addAction(UIAction { [weak self] _ in self?.didTapLike() }, for: .touchUpInside)
+        } else {
+            button.addTarget(self, action: #selector(didTapLike), for: .touchUpInside)
+        }
+        
+        return button
+    }()
     
     // MARK: Properties
     var image: UIImage? {
@@ -23,8 +60,6 @@ final class SingleImageViewController: UIViewController {
         updateImage()
     }
     
-
-    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         guard let image = imageView.image else { return }
@@ -35,7 +70,6 @@ final class SingleImageViewController: UIViewController {
     @objc private func didTapLike() {
         print("like")
     }
-   
     
     @objc private func didTapBack() {
         if let navigationController = navigationController {
@@ -55,24 +89,21 @@ final class SingleImageViewController: UIViewController {
     
     private func setupUI() {
         view.backgroundColor = UIColor(resource: .ypBlack)
-        setupScrollView()
-        setupImageView()
-        setupButtons()
+        setupConstraints()
     }
     
     private func setupNavigationBar() {
         let backButton = UIButton(type: .system)
         backButton.setImage(UIImage(resource: .iconBackChevronWV), for: .normal)
         backButton.tintColor = UIColor(resource: .ypWhite)
-
-        backButton.addTarget(
-            self,
-            action: #selector(didTapBack),
-            for: .touchUpInside
-        )
-
+        
+        if #available(iOS 14.0, *) {
+            backButton.addAction(UIAction { [weak self] _ in self?.didTapBack() }, for: .touchUpInside)
+        } else {
+            backButton.addTarget(self, action: #selector(didTapBack), for: .touchUpInside)
+        }
+        
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: backButton)
-
         configureTransparentNavigationBar()
     }
     
@@ -82,47 +113,23 @@ final class SingleImageViewController: UIViewController {
         navigationController?.navigationBar.shadowImage = UIImage()
     }
     
-    private func setupScrollView() {
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
+    private func setupConstraints() {
         view.addSubview(scrollView)
-        scrollView.delegate = self
+        scrollView.addSubview(imageView)
+        view.addSubview(likeButton)
+        view.addSubview(shareButton)
         
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-    }
-    
-    private func setupImageView() {
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.addSubview(imageView)
-        
-        NSLayoutConstraint.activate([
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
             imageView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
             imageView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-        ])
-        
-        imageView.contentMode = .scaleAspectFit
-    }
-    
-    private func setupButtons() {
-        likeButton.translatesAutoresizingMaskIntoConstraints = false
-        shareButton.translatesAutoresizingMaskIntoConstraints = false
-        
-        likeButton.setImage(UIImage(resource: .iconCircleLike), for: .normal)
-        shareButton.setImage(UIImage(resource: .iconCircleShare), for: .normal)
-
-        likeButton.addTarget(self, action: #selector(didTapLike), for: .touchUpInside)
-        shareButton.addTarget(self, action: #selector(didTapShare), for: .touchUpInside)
-
-        view.addSubview(likeButton)
-        view.addSubview(shareButton)
-
-        NSLayoutConstraint.activate([
+            
             likeButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             likeButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 68),
             likeButton.widthAnchor.constraint(equalToConstant: 51),
@@ -134,7 +141,6 @@ final class SingleImageViewController: UIViewController {
             shareButton.heightAnchor.constraint(equalToConstant: 50),
         ])
     }
-    
     
     private func updateImage() {
         guard isViewLoaded, let image else { return }

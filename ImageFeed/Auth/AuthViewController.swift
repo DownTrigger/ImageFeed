@@ -8,9 +8,31 @@ protocol AuthViewControllerDelegate: AnyObject {
 
 // MARK: - AuthViewController
 final class AuthViewController: UIViewController {
-
-    private let logoImageView = UIImageView()
-    private let loginButton = UIButton()
+    
+    private lazy var logoImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(resource: .logoAuthScreen)
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
+    private lazy var loginButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Войти", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
+        button.setTitleColor(.black, for: .normal)
+        button.backgroundColor = .white
+        button.layer.cornerRadius = 16
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        if #available(iOS 14.0, *) {
+            button.addAction(UIAction { [weak self] _ in self?.didTapLoginButton() }, for: .touchUpInside)
+        } else {
+            button.addTarget(self, action: #selector(didTapLoginButton), for: .touchUpInside)
+        }
+        return button
+    }()
     
     // MARK: - Logger
     private let logger = Logger(label: "AuthViewController")
@@ -22,7 +44,7 @@ final class AuthViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(resource: .ypBlack)
-        setupUI()
+        
         setupConstraints()
     }
     
@@ -35,7 +57,7 @@ final class AuthViewController: UIViewController {
             rootViewController: webViewViewController
         )
         navigationController.modalPresentationStyle = .fullScreen
-
+        
         present(navigationController, animated: true)
     }
     
@@ -44,33 +66,10 @@ final class AuthViewController: UIViewController {
         showWebView()
     }
     
-    // MARK: - UI Elements
-    private func setupLogoImageView() {
-        logoImageView.image = UIImage(resource: .logoAauthScreen)
-        logoImageView.contentMode = .scaleAspectFit
-        logoImageView.translatesAutoresizingMaskIntoConstraints = false
-    }
-    
-    private func setupLoginButton() {
-        loginButton.setTitle("Войти", for: .normal)
-        loginButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-        loginButton.setTitleColor(.black, for: .normal)
-        loginButton.backgroundColor = .white
-        loginButton.layer.cornerRadius = 16
-        loginButton.translatesAutoresizingMaskIntoConstraints = false
-    }
-    
-    // MARK: - UI Setup
-    private func setupUI() {
-        setupLogoImageView()
-        setupLoginButton()
-        
+    private func setupConstraints() {
         view.addSubview(logoImageView)
         view.addSubview(loginButton)
-        loginButton.addTarget(self, action: #selector(didTapLoginButton), for: .touchUpInside)
-    }
-    
-    private func setupConstraints() {
+        
         NSLayoutConstraint.activate([
             logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             logoImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -100),
@@ -89,7 +88,6 @@ final class AuthViewController: UIViewController {
 // MARK: - WebViewViewControllerDelegate
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-//        vc.dismiss(animated: true)
         delegate?.authViewController(self, didReceiveCode: code)
     }
     

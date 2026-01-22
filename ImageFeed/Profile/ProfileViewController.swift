@@ -2,25 +2,100 @@ import UIKit
 import WebKit
 import Kingfisher
 
-class ProfileViewController: UIViewController {
+final class ProfileViewController: UIViewController {
     
     // MARK: - Dependencies
     private let tokenStorage = OAuth2TokenStorage.shared
     private let profileService = ProfileService.shared
+    private let dataCleaner = WebViewDataCleaner.shared
+    private var application: UIApplication {
+        UIApplication.shared
+    }
     
     // MARK: - State
     private var profileImageServiceObserver: NSObjectProtocol?
     private var profileObserver: NSObjectProtocol?
-
+    
     // MARK: - UI Elements
-    private var profileImageView: UIImageView!
-    private var logoutButton: UIButton!
-    private var nameLabel: UILabel!
-    private var loginNameLabel: UILabel!
-    private var descriptionLabel: UILabel!
-    private var favoritesLabel: UILabel!
-    private var favoritesValueLabel: UILabel!
-    private var favoritesTableView: UITableView!
+    private lazy var profileImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(resource: .userProfile)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
+    private lazy var logoutButton: UIButton = {
+        let buttonImage = UIImage(resource: .iconLogout)
+        let button = UIButton(type: .system)
+        button.setImage(buttonImage, for: .normal)
+        button.tintColor = UIColor(resource: .ypRed)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        if #available(iOS 14.0, *) {
+            button.addAction(UIAction { [weak self] _ in self?.didTapLogoutButton() }, for: .touchUpInside)
+        } else {
+            button.addTarget(self, action: #selector(didTapLogoutButton), for: .touchUpInside)
+        }
+        
+        return button
+    }()
+    
+    private lazy var nameLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 23, weight: .bold)
+        label.textColor = UIColor(resource: .ypWhite)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var loginNameLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
+        label.textColor = UIColor(resource: .ypGray)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var descriptionLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
+        label.textColor = UIColor(resource: .ypWhite)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var favoritesLabel: UILabel = {
+        let label = UILabel()
+        label.text = ProfileConstants.favoritesTitle
+        label.font = UIFont.systemFont(ofSize: 23, weight: .bold)
+        label.textColor = UIColor(resource: .ypWhite)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var favoritesValueLabel: UILabel = {
+        let label = UILabel()
+        label.text = ProfileConstants.favoritesCount
+        label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
+        label.textColor = UIColor(resource: .ypWhite)
+        label.backgroundColor = UIColor(resource: .ypBlue)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.layer.cornerRadius = 12
+        label.layer.masksToBounds = true
+        return label
+    }()
+    
+    private lazy var favoritesTableView: UITableView = {
+        let tableView = UITableView()
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.register(PhotoCell.self, forCellReuseIdentifier: PhotoCell.reuseIdentifier)
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.backgroundColor = UIColor(resource: .ypBlack)
+        tableView.separatorStyle = .none
+        return tableView
+    }()
     
     // MARK: - Constants
     private enum ProfileConstants {
@@ -42,13 +117,22 @@ class ProfileViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
- 
-        setupUI()
+        
+        setupConstraints()
         setupObservers()
         
         updateProfileUI()
         updateAvatar()
-        
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: false)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: false)
     }
     
     deinit {
@@ -69,13 +153,13 @@ class ProfileViewController: UIViewController {
             print("[ProfileViewController.updateAvatar]: Error – invalid avatar URL")
             return
         }
-
+        
         print("imageUrl: \(imageUrl)")
-
+        
         let placeholderImage = UIImage(resource: .avatarPlaceholder)
             .withTintColor(.lightGray, renderingMode: .alwaysOriginal)
             .withConfiguration(UIImage.SymbolConfiguration(pointSize: 70, weight: .regular, scale: .large))
-
+        
         let processor = RoundCornerImageProcessor(cornerRadius: 35)
         profileImageView.kf.indicatorType = .activity
         profileImageView.kf.setImage(
@@ -93,7 +177,7 @@ class ProfileViewController: UIViewController {
         nameLabel.text = profile.name.isEmpty ? "Имя не указано" : profile.name
         loginNameLabel.text = profile.loginName.isEmpty ? "@неизвестный_пользователь" : profile.loginName
         descriptionLabel.text = (profile.bio?.isEmpty ?? true) ? "Профиль не заполнен" : profile.bio
-       
+        
     }
     
     private func updateProfileUI()  {
@@ -125,130 +209,44 @@ class ProfileViewController: UIViewController {
     }
     
     // MARK: - UI Setup
-    private func setupUI() {
-        setupProfileImageView()
-        setupLogoutButton()
-        setupNameLabel()
-        setupLoginNameLabel()
-        setupDescriptionLabel()
-        setupFavorites()
-        setupFavoritesValue()
-        setupFavoritesTableView()
-    }
-    
-    private func setupProfileImageView() {
-        let profileImage = UIImage(resource: .userProfile)
-        profileImageView = UIImageView(image: profileImage)
-        profileImageView.translatesAutoresizingMaskIntoConstraints = false
+    private func setupConstraints() {
         view.addSubview(profileImageView)
+        view.addSubview(logoutButton)
+        view.addSubview(nameLabel)
+        view.addSubview(loginNameLabel)
+        view.addSubview(descriptionLabel)
+        view.addSubview(favoritesLabel)
+        view.addSubview(favoritesValueLabel)
+        view.addSubview(favoritesTableView)
         
         NSLayoutConstraint.activate([
             profileImageView.widthAnchor.constraint(equalToConstant: 70),
             profileImageView.heightAnchor.constraint(equalToConstant: 70),
-            profileImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            profileImageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16)
-        ])
-    }
-    
-    private func setupLogoutButton() {
-        let buttonImage = UIImage(resource: .iconLogout)
-        logoutButton = UIButton.systemButton(with: buttonImage, target: self, action: #selector(didTapLogoutButton))
-        logoutButton.tintColor = UIColor(resource: .ypRed)
-        logoutButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(logoutButton)
-        
-        NSLayoutConstraint.activate([
+            profileImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 32),
+            profileImageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            
             logoutButton.centerYAnchor.constraint(equalTo: profileImageView.centerYAnchor),
-            logoutButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
+            logoutButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
             logoutButton.heightAnchor.constraint(equalToConstant: 44),
-            logoutButton.widthAnchor.constraint(equalToConstant: 44)
-        ])
-    }
-    
-    private func setupNameLabel() {
-        nameLabel = UILabel()
-        nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
-        nameLabel.textColor = UIColor(resource: .ypWhite)
-        nameLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(nameLabel)
-        
-        NSLayoutConstraint.activate([
+            logoutButton.widthAnchor.constraint(equalToConstant: 44),
+            
             nameLabel.topAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: 8),
-            nameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
-        ])
-    }
-    
-    private func setupLoginNameLabel() {
-        loginNameLabel = UILabel()
-        loginNameLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        loginNameLabel.textColor = UIColor(resource: .ypGray)
-        loginNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(loginNameLabel)
-        
-        NSLayoutConstraint.activate([
+            nameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
+            
             loginNameLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
-            loginNameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
-        ])
-    }
-    
-    private func setupDescriptionLabel() {
-        descriptionLabel = UILabel()
-        descriptionLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        descriptionLabel.textColor = UIColor(resource: .ypWhite)
-        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(descriptionLabel)
-        
-        NSLayoutConstraint.activate([
+            loginNameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
+            
             descriptionLabel.topAnchor.constraint(equalTo: loginNameLabel.bottomAnchor, constant: 8),
-            descriptionLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
-        ])
-    }
-    
-    private func setupFavorites() {
-        favoritesLabel = UILabel()
-        favoritesLabel.text = ProfileConstants.favoritesTitle
-        favoritesLabel.font = UIFont.systemFont(ofSize: 23, weight: .bold)
-        favoritesLabel.textColor = UIColor(resource: .ypWhite)
-        favoritesLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(favoritesLabel)
-        
-        NSLayoutConstraint.activate([
+            descriptionLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
+            
             favoritesLabel.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 22),
-            favoritesLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor)
-        ])
-    }
-    
-    private func setupFavoritesValue() {
-        favoritesValueLabel = UILabel()
-        favoritesValueLabel.text = ProfileConstants.favoritesCount
-        favoritesValueLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        favoritesValueLabel.textColor = UIColor(resource: .ypWhite)
-        favoritesValueLabel.backgroundColor = UIColor(resource: .ypBlue)
-        favoritesValueLabel.textAlignment = .center
-        favoritesValueLabel.translatesAutoresizingMaskIntoConstraints = false
-        favoritesValueLabel.layer.cornerRadius = 12
-        favoritesValueLabel.layer.masksToBounds = true
-        view.addSubview(favoritesValueLabel)
-        
-        NSLayoutConstraint.activate([
+            favoritesLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
+            
             favoritesValueLabel.centerYAnchor.constraint(equalTo: favoritesLabel.centerYAnchor),
             favoritesValueLabel.leadingAnchor.constraint(equalTo: favoritesLabel.trailingAnchor, constant: 8),
             favoritesValueLabel.heightAnchor.constraint(equalToConstant: 22),
-            favoritesValueLabel.widthAnchor.constraint(equalToConstant: 40)
-        ])
-    }
-    
-    private func setupFavoritesTableView() {
-        favoritesTableView = UITableView()
-        favoritesTableView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(favoritesTableView)
-        favoritesTableView.register(PhotoCell.self, forCellReuseIdentifier: PhotoCell.reuseIdentifier)
-        favoritesTableView.delegate = self
-        favoritesTableView.dataSource = self
-        favoritesTableView.backgroundColor = UIColor(resource: .ypBlack)
-        favoritesTableView.separatorStyle = .none
-        
-        NSLayoutConstraint.activate([
+            favoritesValueLabel.widthAnchor.constraint(equalToConstant: 40),
+            
             favoritesTableView.topAnchor.constraint(equalTo: favoritesLabel.bottomAnchor, constant: 12),
             favoritesTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             favoritesTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -258,46 +256,27 @@ class ProfileViewController: UIViewController {
     
     // MARK: - Actions
     @objc private func didTapLogoutButton() {
-        tokenStorage.token = nil
+        dataCleaner.clear { [weak self] in
+            guard let self else { return }
 
-        clearWebViewData { [weak self] in
-            guard self != nil else { return }
-
-            guard
-                let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                let window = windowScene.windows.first
-            else {
-                assertionFailure("Не удалось получить window")
-                return
-            }
-
-            let splashViewController = SplashViewController()
-            window.rootViewController = splashViewController
-            window.makeKeyAndVisible()
+            self.tokenStorage.token = nil
+            self.resetRootController()
         }
     }
-}
-
-// MARK: - WebView Cleanup
-extension ProfileViewController {
-    private func clearWebViewData(completion: @escaping () -> Void) {
-        let dataStore = WKWebsiteDataStore.default()
-        
-        let dataTypes: Set<String> = [
-            WKWebsiteDataTypeCookies,
-            WKWebsiteDataTypeLocalStorage,
-            WKWebsiteDataTypeSessionStorage,
-            WKWebsiteDataTypeIndexedDBDatabases,
-            WKWebsiteDataTypeWebSQLDatabases
-        ]
-        
-        dataStore.fetchDataRecords(ofTypes: dataTypes) { records in
-            dataStore.removeData(ofTypes: dataTypes, for: records) {
-                DispatchQueue.main.async {
-                    completion()
-                }
-            }
+    
+    // MARK: - Navigation
+    private func resetRootController() {
+        guard
+            let windowScene = application.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first
+        else {
+            assertionFailure("Не удалось получить window")
+            return
         }
+
+        let splashViewController = SplashViewController()
+        window.rootViewController = splashViewController
+        window.makeKeyAndVisible()
     }
 }
 
@@ -323,11 +302,11 @@ extension ProfileViewController: UITableViewDataSource {
 extension ProfileViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-
+        
         let singleImageViewController = SingleImageViewController()
         singleImageViewController.hidesBottomBarWhenPushed = true
         singleImageViewController.image = UIImage(named: photosName[indexPath.row])
-
+        
         navigationController?.pushViewController(singleImageViewController, animated: true)
     }
     

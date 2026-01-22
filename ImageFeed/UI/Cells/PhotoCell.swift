@@ -13,11 +13,11 @@ final class PhotoCell: UITableViewCell {
     ) {
         cellImage.image = image
         dateLabel.text = dateText
-
+        
         let likeImage = isLiked
-            ? UIImage(resource: .iconLikeFilled)
-            : UIImage(resource: .iconLike)
-
+        ? UIImage(resource: .iconLikeFilled)
+        : UIImage(resource: .iconLike)
+        
         likeButton.setImage(likeImage, for: .normal)
     }
     

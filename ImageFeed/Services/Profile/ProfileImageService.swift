@@ -8,7 +8,7 @@ final class ProfileImageService {
     private init() {}
     
     // MARK: - Notifications
-    static let didChangeNotification = Notification.Name(rawValue: "ProfileImageProviderDidChange")
+    static let didChangeNotification = Notification.Name("ProfileImageProviderDidChange")
     
     // MARK: - Dependencies
     private let urlSession = URLSession.shared
@@ -25,32 +25,32 @@ final class ProfileImageService {
     func fetchProfileImageURL(username: String, completion: @escaping (Result<String, Error>) -> Void) {
         // Cancel previous in-flight request
         task?.cancel()
-
+        
         // Ensure auth token exists
         guard let token = tokenStorage.token else {
-//            self.logger.error("[ProfileImageService.fetchProfileImageURL]: AuthError – token missing")
+            //            self.logger.error("[ProfileImageService.fetchProfileImageURL]: AuthError – token missing")
             print("[ProfileImageService.fetchProfileImageURL]: AuthError – token missing")
             DispatchQueue.main.async {
                 completion(.failure(NSError(domain: "ProfileImageService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Authorization token missing"])))
             }
             return
         }
-
+        
         // Build profile image request
         guard let request = makeProfileImageRequest(username: username, token: token) else {
-//            self.logger.error("[ProfileImageService.fetchProfileImageURL]: NetworkError – badURL, username=\(username)")
+            //            self.logger.error("[ProfileImageService.fetchProfileImageURL]: NetworkError – badURL, username=\(username)")
             print("[ProfileImageService.fetchProfileImageURL]: NetworkError – badURL, username=\(username)")
             DispatchQueue.main.async {
                 completion(.failure(URLError(.badURL)))
             }
             return
         }
-
+        
         let task = urlSession.objectTask(
             for: request
         ) { [weak self] (result: Result<UserResult, Error>) in
             guard let self else { return }
-
+            
             DispatchQueue.main.async {
                 defer { self.task = nil }
                 
@@ -81,15 +81,14 @@ final class ProfileImageService {
     // MARK: - Private Helpers
     private func makeProfileImageRequest(username: String, token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/users/\(username)") else {
-//            self.logger.error("[ProfileImageService.makeProfileImageRequest]: NetworkError – invalidURL, username=\(username)")
+            //            self.logger.error("[ProfileImageService.makeProfileImageRequest]: NetworkError – invalidURL, username=\(username)")
             print("[ProfileImageService.makeProfileImageRequest]: NetworkError – invalidURL, username=\(username)")
             return nil
         }
         
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = HTTPMethod.get.rawValue
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         return request
     }
-    
 }
