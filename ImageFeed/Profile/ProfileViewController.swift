@@ -1,5 +1,4 @@
 import UIKit
-import WebKit
 import Kingfisher
 
 final class ProfileViewController: UIViewController {
