@@ -8,6 +8,7 @@ enum Constants {
     
     static let defaultBaseURL: URL = {
         guard let url = URL(string: "https://api.unsplash.com") else {
+            print("[APIConstants.defaultBaseURL]: Error – invalid base URL string")
             fatalError("Invalid base URL")
         }
         return url

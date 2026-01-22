@@ -9,75 +9,76 @@ final class OAuth2Service {
     
     // MARK: - Dependencies
     private let tokenStorage = OAuth2TokenStorage.shared
+    private let urlSession = URLSession.shared
     
-    // MARK: - Decoder
-    private let decoder = JSONDecoder()
+    // MARK: - State
+    private var task: URLSessionTask?
+    private var lastCode: String?
     
     // MARK: - Logger
     private let logger = Logger(label: "OAuth2Service")
     
-    // MARK: Public API
-    func fetchAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
+    // MARK: - Public API
+    func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        
+        // Prevent duplicate requests with the same code
+        guard lastCode != code else {
+            //            self.logger.error("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")
+            print("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")
+            return
+        }
+        
+        // Cancel previous in-flight request
+        task?.cancel()
+        
+        lastCode = code
+        let requestCode = code
+        
+        // Build OAuth token request
         guard let request = makeOAuthTokenRequest(code: code) else {
-            self.logger.error("Failed to build OAuth token request")
+            //            self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
+            print("[OAuth2Service.fetchOAuthToken]: NetworkError.invalidRequest – failed to build request")
             DispatchQueue.main.async {
                 completion(.failure(NetworkError.invalidRequest))
             }
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            
-            if let error = error {
-                self.logger.error("Network error while fetching OAuth token: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
-                return
-            }
-            
+        // Perform network request
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuth2TokenResponseBody, Error>) in
             guard
-                let response = response as? HTTPURLResponse,
-                let data = data
+                let self = self,
+                self.lastCode == requestCode
             else {
-                self.logger.error("Invalid response or missing data while fetching OAuth token")
-                DispatchQueue.main.async {
-                    completion(.failure(NetworkError.urlSessionError))
-                }
                 return
             }
-            
-            guard (200...299).contains(response.statusCode) else {
-                self.logger.error("HTTP error while fetching OAuth token, status code: \(response.statusCode)")
-                DispatchQueue.main.async {
-                    completion(.failure(NetworkError.httpStatusCode(response.statusCode)))
-                }
-                return
-            }
-            
-            do {
-                let decoded = try self.decoder.decode(OAuth2TokenResponseBody.self, from: data)
-                let token = decoded.accessToken
-                self.tokenStorage.token = token
                 
-                DispatchQueue.main.async {
+                // Handle network result
+                switch result {
+                case .success(let decoded):
+                    let token = decoded.accessToken
+                    self.tokenStorage.token = token
                     completion(.success(token))
-                }
-            } catch {
-                self.logger.error("Failed to decode OAuth token response: \(error.localizedDescription)")
-                DispatchQueue.main.async {
+                    
+                case .failure(let error):
+                    //                    self.logger.error("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
+                    print("[OAuth2Service.fetchOAuthToken]: NetworkError – \(error)")
                     completion(.failure(error))
                 }
-            }
+    
+                self.task = nil
+                self.lastCode = nil
         }
-        
+        self.task = task
         task.resume()
     }
     
-    // MARK: Private helpers
+    // MARK: - Private helpers
     private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard var components = URLComponents(string: "https://unsplash.com/oauth/token") else {
-            self.logger.error("Failed to create URLComponents")
+            //            self.logger.error("[OAuth2Service.makeOAuthTokenRequest]: Failed to create URLComponents")
+            print("[OAuth2Service.makeOAuthTokenRequest]: Failed to create URLComponents")
             return nil
         }
         
@@ -90,7 +91,8 @@ final class OAuth2Service {
         ]
         
         guard let url = components.url else {
-            self.logger.error("Failed to get URL from URLComponents")
+            //            self.logger.error("[OAuth2Service.makeOAuthTokenRequest]: Failed to build URL")
+            print("[OAuth2Service.makeOAuthTokenRequest]: Failed to build URL")
             return nil
         }
         

@@ -28,23 +28,71 @@ extension URLSession {
         }
         
         let task = dataTask(with: request, completionHandler: { data, response, error in
-            if let data = data, let response = response, let statusCode = (response as? HTTPURLResponse)?.statusCode {
-                if 200 ..< 300 ~= statusCode {
-                    fulfillCompletionOnTheMainThread(.success(data))
-                } else {
-                    Self.logger.error("HTTP error response")
-                    fulfillCompletionOnTheMainThread(.failure(NetworkError.httpStatusCode(statusCode)))
-                }
-            } else if let error = error {
-                Self.logger.error("URLSession request error")
+            
+            if let error = error {
+                //                Self.logger.error("[URLSession.data]: NetworkError.urlRequestError – \(error)")
+                print("[URLSession.data]: NetworkError.urlRequestError – \(error)")
                 fulfillCompletionOnTheMainThread(.failure(NetworkError.urlRequestError(error)))
-            } else {
-                Self.logger.critical("Invalid URLSession state: no data and no error")
-                fulfillCompletionOnTheMainThread(.failure(NetworkError.urlSessionError))
+                return
             }
+            
+            guard
+                let response = response as? HTTPURLResponse
+            else {
+                //                Self.logger.error("[URLSession.data]: NetworkError.urlSessionError – invalid response")
+                print("[URLSession.data]: NetworkError.urlSessionError – invalid response")
+                fulfillCompletionOnTheMainThread(.failure(NetworkError.urlSessionError))
+                return
+            }
+            
+            let statusCode = response.statusCode
+            
+            guard 200..<300 ~= statusCode else {
+                //                Self.logger.error("[URLSession.data]: NetworkError.httpStatusCode – \(statusCode)")
+                print("[URLSession.data]: NetworkError.httpStatusCode – \(statusCode)")
+                fulfillCompletionOnTheMainThread(.failure(NetworkError.httpStatusCode(statusCode)))
+                return
+            }
+            
+            guard let data = data else {
+                //                Self.logger.error("[URLSession.data]: NetworkError.urlSessionError – data is nil")
+                print("[URLSession.data]: NetworkError.urlSessionError – data is nil")
+                fulfillCompletionOnTheMainThread(.failure(NetworkError.urlSessionError))
+                return
+            }
+            
+            fulfillCompletionOnTheMainThread(.success(data))
         })
         
         return task
     }
-    
+}
+
+extension URLSession {
+    func objectTask<T: Decodable>(
+        for request: URLRequest,
+        completion: @escaping (Result<T, Error>) -> Void
+    ) -> URLSessionTask {
+        
+        let decoder = JSONDecoder()
+        
+        let task = data(for: request) { (result: Result<Data, Error>) in
+            switch result {
+            case .success(let data):
+                do {
+                    let object = try decoder.decode(T.self, from: data)
+                    completion(.success(object))
+                } catch {
+                    //                    Self.logger.error([URLSession.objectTask]: DecodingError – \(error), Data: \(String(data: data, encoding: .utf8) ?? "")")
+                    print("[URLSession.objectTask]: DecodingError – \(error), Data: \(String(data: data, encoding: .utf8) ?? "")")
+                    completion(.failure(error))
+                }
+            case .failure(let error):
+                //                Self.logger.error("[URLSession.objectTask]: NetworkError – \(error)")
+                print("[URLSession.objectTask]: NetworkError – \(error)")
+                completion(.failure(error))
+            }
+        }
+        return task
+    }
 }
