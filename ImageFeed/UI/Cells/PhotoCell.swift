@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class PhotoCell: UITableViewCell {
     
@@ -7,11 +8,18 @@ final class PhotoCell: UITableViewCell {
     
     // MARK: - Configuration
     func configure(
-        image: UIImage?,
+        imageURL: String,
         dateText: String,
         isLiked: Bool
     ) {
-        cellImage.image = image
+        if let url = URL(string: imageURL) {
+            cellImage.kf.setImage(
+                    with: url,
+                    placeholder: UIImage(resource: .photoPlaceholder)
+                )
+        } else {
+            cellImage.image = nil
+        }
         dateLabel.text = dateText
         
         let likeImage = isLiked
@@ -20,6 +28,15 @@ final class PhotoCell: UITableViewCell {
         
         likeButton.setImage(likeImage, for: .normal)
     }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        cellImage.kf.cancelDownloadTask()
+        cellImage.image = nil
+        
+    }
+    
+    
     
     // MARK: - Private UI Elements
     let cellImage: UIImageView = {

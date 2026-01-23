@@ -46,6 +46,7 @@ final class SingleImageViewController: UIViewController {
     }()
     
     // MARK: Properties
+    var imageURL: String?
     var image: UIImage? {
         didSet {
             updateImage()
@@ -58,6 +59,8 @@ final class SingleImageViewController: UIViewController {
         setupNavigationBar()
         setupUI()
         updateImage()
+        
+        loadImage()
     }
     
     override func viewDidLayoutSubviews() {
@@ -83,6 +86,21 @@ final class SingleImageViewController: UIViewController {
         guard let image = image else { return }
         let share = UIActivityViewController(activityItems: [image], applicationActivities: nil)
         present(share, animated: true, completion: nil)
+    }
+    
+    // MARK: - Image Loading
+    private func loadImage() {
+        guard
+            let imageURL,
+            let url = URL(string: imageURL)
+        else {
+            return
+        }
+
+        imageView.kf.setImage(
+            with: url,
+            placeholder: UIImage(resource: .photoPlaceholder)
+        )
     }
     
     // MARK: Private Methods

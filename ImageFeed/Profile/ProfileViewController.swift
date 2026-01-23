@@ -7,6 +7,7 @@ final class ProfileViewController: UIViewController {
     private let tokenStorage = OAuth2TokenStorage.shared
     private let profileService = ProfileService.shared
     private let dataCleaner = WebViewDataCleaner.shared
+    private let imagesListService = ImagesListService.shared
     private var application: UIApplication {
         UIApplication.shared
     }
@@ -111,7 +112,8 @@ final class ProfileViewController: UIViewController {
     }()
     
     // MARK: - Properties
-    private let photosName: [String] = Array(0..<20).map{ "\($0)" }
+    private var photos: [Photo] = []
+    private let today = Date()
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -119,6 +121,8 @@ final class ProfileViewController: UIViewController {
         
         setupConstraints()
         setupObservers()
+        
+        imagesListService.fetchPhotosNextPage()
         
         updateProfileUI()
         updateAvatar()
@@ -184,6 +188,11 @@ final class ProfileViewController: UIViewController {
         updateProfileDetails(with: profile)
     }
     
+    @objc private func didReceiveImagesUpdate() {
+        photos = imagesListService.photos
+        favoritesTableView.reloadData()
+    }
+    
     // MARK: - Observers
     private func setupObservers() {
         profileObserver = NotificationCenter.default
@@ -205,6 +214,13 @@ final class ProfileViewController: UIViewController {
                 guard let self = self else { return }
                 self.updateAvatar()
             }
+        
+        NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(didReceiveImagesUpdate),
+                name: ImagesListService.didChangeNotification,
+                object: nil
+            )
     }
     
     // MARK: - UI Setup
@@ -282,18 +298,18 @@ final class ProfileViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension ProfileViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return photosName.count
+        photos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: PhotoCell.reuseIdentifier, for: indexPath)
         
-        guard let PhotoCell = cell as? PhotoCell else {
+        guard let photoCell = cell as? PhotoCell else {
             return UITableViewCell()
         }
         
-        configCell(for: PhotoCell, with: indexPath)
-        return PhotoCell
+        configCell(for: photoCell, with: indexPath)
+        return photoCell
     }
 }
 
@@ -304,36 +320,33 @@ extension ProfileViewController: UITableViewDelegate {
         
         let singleImageViewController = SingleImageViewController()
         singleImageViewController.hidesBottomBarWhenPushed = true
-        singleImageViewController.image = UIImage(named: photosName[indexPath.row])
+        let photo = photos[indexPath.row]
+        singleImageViewController.imageURL = photo.largeImageURL
         
         navigationController?.pushViewController(singleImageViewController, animated: true)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return 0
-        }
+        let photo = photos[indexPath.row]
         
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let imageViewWidth = view.frame.width - imageInsets.left - imageInsets.right
-        let imageWidth = image.size.width
+        let imageWidth = photo.size.width
         let scale = imageViewWidth / imageWidth
-        let cellHeight = image.size.height * scale + imageInsets.top + imageInsets.bottom
-        return cellHeight
+        return photo.size.height * scale + imageInsets.top + imageInsets.bottom
     }
 }
 
 // MARK: - Cell Configuration
 extension ProfileViewController {
     func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return
-        }
+        let photo = photos[indexPath.row]
+        let dateText = dateFormatter.string(from: today)
         
-        cell.cellImage.image = image
-        cell.dateLabel.text = dateFormatter.string(from: Date())
-        
-        let likeImage = UIImage(resource: .iconLikeFilled)
-        cell.likeButton.setImage(likeImage, for: .normal)
+        cell.configure(
+                imageURL: photo.regularImageURL,
+                dateText: dateText,
+                isLiked: photo.isLiked
+            )
     }
 }

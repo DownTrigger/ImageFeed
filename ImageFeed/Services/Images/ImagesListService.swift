@@ -44,7 +44,7 @@ final class ImagesListService {
                         size: CGSize(width: $0.width, height: $0.height),
                         createdAt: nil,
                         description: $0.description,
-                        thumbImageURL: $0.urls.thumb,
+                        regularImageURL: $0.urls.regular,
                         largeImageURL: $0.urls.full,
                         isLiked: $0.likedByUser
                     )
