@@ -3,6 +3,8 @@ import Kingfisher
 
 final class PhotoCell: UITableViewCell {
     
+    var onLikeButtonTapped: (() -> Void)?
+    
     // MARK: - Identifier
     static let reuseIdentifier = "PhotoCell"
     
@@ -32,14 +34,16 @@ final class PhotoCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         cellImage.kf.cancelDownloadTask()
-        cellImage.image = nil
-        
+        cellImage.image = UIImage(resource: .photoPlaceholder)
     }
     
-    
+    // MARK: - Actions
+    @objc private func didTapLikeButton() {
+        onLikeButtonTapped?()
+    }
     
     // MARK: - Private UI Elements
-    let cellImage: UIImageView = {
+    private lazy var cellImage: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill
         imageView.layer.cornerRadius = 16
@@ -48,15 +52,22 @@ final class PhotoCell: UITableViewCell {
         return imageView
     }()
     
-    let likeButton: UIButton = {
+    private lazy var likeButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("", for: .normal)
         button.tintColor = UIColor(resource: .ypRed)
         button.translatesAutoresizingMaskIntoConstraints = false
+        
+        if #available(iOS 14.0, *) {
+            button.addAction(UIAction { [weak self] _ in self?.didTapLikeButton() }, for: .touchUpInside)
+        } else {
+            button.addTarget(self, action: #selector(didTapLikeButton), for: .touchUpInside)
+        }
+        
         return button
     }()
     
-    let dateLabel: UILabel = {
+    private lazy var dateLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         label.textColor = UIColor(resource: .ypWhite)
@@ -96,9 +107,9 @@ final class PhotoCell: UITableViewCell {
     private func setupViews() {
         backgroundColor = UIColor(resource: .ypBlack)
         contentView.addSubview(cellImage)
-        contentView.addSubview(likeButton)
         contentView.addSubview(gradientView)
         contentView.addSubview(dateLabel)
+        contentView.addSubview(likeButton)
     }
     
     private func setupConstraints() {

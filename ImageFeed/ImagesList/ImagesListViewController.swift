@@ -22,7 +22,6 @@ final class ImagesListViewController: UIViewController {
     private let imagesListService = ImagesListService.shared
     
     // MARK: - Properties
-    private let today = Date()
     private var photos: [Photo] = []
     
     private lazy var dateFormatter: DateFormatter = {
@@ -99,6 +98,38 @@ final class ImagesListViewController: UIViewController {
         }
     }
     
+    private func didTapLikeButton(at indexPath: IndexPath) {
+        let photo = photos[indexPath.row]
+        imagesListService.changeLike(photoId: photo.id, isLike: !photo.isLiked) { [weak self] result in
+            switch result {
+            case .success:
+                self?.updateLikeState(photoId: photo.id)
+            case .failure(let error):
+                self?.logger.error("Failed to change like state: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    private func updateLikeState(photoId: String) {
+        guard let index = photos.firstIndex(where: { $0.id == photoId }) else { return }
+        let photo = photos[index]
+        let updatedPhoto = Photo(
+            id: photo.id,
+            size: photo.size,
+            createdAt: photo.createdAt,
+            description: photo.description,
+            regularImageURL: photo.regularImageURL,
+            largeImageURL: photo.largeImageURL,
+            isLiked: !photo.isLiked
+        )
+        photos[index] = updatedPhoto
+        let indexPath = IndexPath(row: index, section: 0)
+        DispatchQueue.main.async {
+            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
+    }
+    
+    
     // MARK: - Setup
     private func setupTableView() {
         view.addSubview(tableView)
@@ -134,13 +165,17 @@ extension ImagesListViewController: UITableViewDataSource {
 extension ImagesListViewController {
     func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
         let photo = photos[indexPath.row]
-        let dateText = dateFormatter.string(from: today)
+        let dateText = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
         
         cell.configure(
             imageURL: photo.regularImageURL,
             dateText: dateText,
             isLiked: photo.isLiked
         )
+        
+        cell.onLikeButtonTapped = { [weak self] in
+            self?.didTapLikeButton(at: indexPath)
+        }
     }
 }
 

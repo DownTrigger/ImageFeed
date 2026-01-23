@@ -341,7 +341,7 @@ extension ProfileViewController: UITableViewDelegate {
 extension ProfileViewController {
     func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
         let photo = photos[indexPath.row]
-        let dateText = dateFormatter.string(from: today)
+        let dateText = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
         
         cell.configure(
                 imageURL: photo.regularImageURL,
