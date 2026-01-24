@@ -22,6 +22,10 @@ final class OAuth2Service {
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
         assert(Thread.isMainThread)
         
+        // Потестит алерт
+//        completion(.failure(NetworkError.invalidRequest))
+//        return
+        
         // Prevent duplicate requests with the same code
         guard lastCode != code else {
             //            self.logger.error("[OAuth2Service.fetchOAuthToken]: Duplicate auth code ignored")

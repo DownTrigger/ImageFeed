@@ -142,27 +142,13 @@ extension SplashViewController: AuthViewControllerDelegate {
 
                     case let .failure(error):
                         print("[SplashViewController.fetchOAuthToken]: Error – \(error)")
-                        self.showAuthErrorAlert {
+                        AlertPresenter.showAuthErrorAlert(on: self) { [weak self] in
+                            guard let self else { return }
                             self.showAuthViewController()
                         }
                     }
                 }
             }
         }
-    }
-
-    func showAuthErrorAlert(onDismiss: @escaping () -> Void) {
-        let alert = UIAlertController(
-            title: "Что-то пошло не так(",
-            message: "Не удалось войти в систему",
-            preferredStyle: .alert
-        )
-        
-        let action = UIAlertAction(title: "Ок", style: .default) { _ in
-            onDismiss()
-        }
-        
-        alert.addAction(action)
-        present(alert, animated: true)
     }
 }

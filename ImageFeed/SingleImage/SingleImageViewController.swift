@@ -132,15 +132,28 @@ final class SingleImageViewController: UIViewController {
     private func loadImage() {
         guard
             let imageURL,
+//            let url = URL(string: "https://example.com/broken_image.jpg") // потестит алерт
             let url = URL(string: imageURL)
         else {
             return
         }
-
-        imageView.kf.setImage(
-            with: url,
-            placeholder: UIImage(resource: .photoPlaceholder)
-        )
+        
+        UIBlockingProgressHUD.show()
+        imageView.kf.setImage(with: url, placeholder: UIImage(resource: .photoPlaceholder)) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            
+            guard let self else { return }
+            
+            switch result {
+            case .success(let imageResult):
+                self.image = imageResult.image
+                
+            case .failure:
+                AlertPresenter.showImageLoadAlert(on: self) { [weak self] in
+                    self?.loadImage()
+                }
+            }
+        }
     }
     
     // MARK: Private Methods
