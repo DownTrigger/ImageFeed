@@ -98,6 +98,13 @@ final class ProfileViewController: UIViewController {
         return tableView
     }()
     
+    private lazy var emptyFavoritesImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(resource: .emptyState)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
     // MARK: - Constants
     private enum ProfileConstants {
         static let favoritesTitle = "Избранное"
@@ -192,8 +199,10 @@ final class ProfileViewController: UIViewController {
 
         let oldIDs = oldLikedPhotos.map { $0.id }
         let newIDs = newLikedPhotos.map { $0.id }
-
-        favoritesValueLabel.text = "\(newLikedPhotos.count)"
+        let count = newLikedPhotos.count
+        favoritesValueLabel.text = "\(count)"
+        favoritesValueLabel.isHidden = count == 0
+        emptyFavoritesImageView.isHidden = count > 0
 
         // Найдём удалённые элементы
         let deletedIndexes = oldIDs.enumerated()
@@ -256,6 +265,7 @@ final class ProfileViewController: UIViewController {
         view.addSubview(favoritesLabel)
         view.addSubview(favoritesValueLabel)
         view.addSubview(favoritesTableView)
+        view.addSubview(emptyFavoritesImageView)
         
         NSLayoutConstraint.activate([
             profileImageView.widthAnchor.constraint(equalToConstant: 70),
@@ -288,7 +298,12 @@ final class ProfileViewController: UIViewController {
             favoritesTableView.topAnchor.constraint(equalTo: favoritesLabel.bottomAnchor, constant: 12),
             favoritesTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             favoritesTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            favoritesTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            favoritesTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            emptyFavoritesImageView.topAnchor.constraint(equalTo: favoritesLabel.bottomAnchor, constant: 110),
+            emptyFavoritesImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyFavoritesImageView.heightAnchor.constraint(equalToConstant: 115),
+            emptyFavoritesImageView.widthAnchor.constraint(equalToConstant: 115)
         ])
     }
     
