@@ -3,12 +3,9 @@ import Kingfisher
 
 final class PhotoCell: UITableViewCell {
     
+    // MARK: - Public API
     var onLikeButtonTapped: (() -> Void)?
     
-    // MARK: - Identifier
-    static let reuseIdentifier = "PhotoCell"
-    
-    // MARK: - Configuration
     func configure(
         imageURL: String,
         dateText: String,
@@ -16,17 +13,17 @@ final class PhotoCell: UITableViewCell {
     ) {
         if let url = URL(string: imageURL) {
             cellImage.kf.setImage(
-                    with: url,
-                    placeholder: UIImage(resource: .photoPlaceholder)
-                )
+                with: url,
+                placeholder: UIImage(resource: .photoPlaceholder)
+            )
         } else {
             cellImage.image = nil
         }
         dateLabel.text = dateText
         
         let likeImage = isLiked
-        ? UIImage(resource: .iconLikeFilled)
-        : UIImage(resource: .iconLike)
+            ? UIImage(resource: .iconLikeFilled)
+            : UIImage(resource: .iconLike)
         
         likeButton.setImage(likeImage, for: .normal)
     }
@@ -37,18 +34,16 @@ final class PhotoCell: UITableViewCell {
         cellImage.image = UIImage(resource: .photoPlaceholder)
     }
     
-    // MARK: - Public API
     func setLikeButtonEnabled(_ isEnabled: Bool) {
         likeButton.isEnabled = isEnabled
-        likeButton.alpha = isEnabled ? 1.0 : 0.5
+        let alphaValue: CGFloat = isEnabled ? 1.0 : 0.5
+        likeButton.alpha = alphaValue
     }
     
-    // MARK: - Actions
-    @objc private func didTapLikeButton() {
-        onLikeButtonTapped?()
-    }
+    // MARK: - Identifier
+    static let reuseIdentifier = "PhotoCell"
     
-    // MARK: - Private UI Elements
+    // MARK: - UI
     private lazy var cellImage: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill
@@ -89,7 +84,8 @@ final class PhotoCell: UITableViewCell {
     
     private let gradientLayer = CAGradientLayer()
     
-    // MARK: - Init
+    // MARK: - Lifecycle
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupViews()
@@ -101,6 +97,11 @@ final class PhotoCell: UITableViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: - Actions
+    @objc private func didTapLikeButton() {
+        onLikeButtonTapped?()
     }
     
     // MARK: - Layout

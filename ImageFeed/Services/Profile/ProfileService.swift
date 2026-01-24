@@ -3,32 +3,32 @@ import Logging
 
 final class ProfileService {
     
+    // MARK: - Logger
+    private let logger = Logger(label: "ProfileService")
+    
     // MARK: - Singleton
     static let shared = ProfileService()
     private init() {}
     
-    // MARK: - Notifications
-    static let profileDidChange = Notification.Name("profileDidChange")
-    
     // MARK: - Dependencies
     private let urlSession = URLSession.shared
     
-    // MARK: - State
-    private var task: URLSessionTask?
+    // MARK: - Public State
     private(set) var profile: Profile?
     
-    // MARK: - Logger
-    private let logger = Logger(label: "ProfileService")
+    // MARK: - Notifications
+    static let profileDidChange = Notification.Name("profileDidChange")
+    
+    // MARK: - Private State
+    private var task: URLSessionTask?
     
     // MARK: - Public API
     func fetchProfile(_ token: String, completion: @escaping (Result<Profile, Error>) -> Void) {
-        // Cancel previous in-flight request
+
         task?.cancel()
         
-        // Build profile request
         guard let request = makeProfileRequest(token: token) else {
-            //            self.logger.error("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
-            print("[ProfileService.fetchProfile]: NetworkError – badURL (failed to build request)")
+            logger.error("[fetchProfile]: NetworkError badURL (failed to build request)")
             DispatchQueue.main.async {
                 completion(.failure(URLError(.badURL)))
             }
@@ -42,13 +42,13 @@ final class ProfileService {
             
             DispatchQueue.main.async {
                 defer { self.task = nil }
-                // Handle network result
+
                 switch result {
                 case .success(let profileResult):
                     let profile = Profile(
                         username: profileResult.username,
-                        name: "\(profileResult.firstName) \(profileResult.lastName)",
                         loginName: "@\(profileResult.username)",
+                        name: "\(profileResult.firstName) \(profileResult.lastName)",
                         bio: profileResult.bio
                     )
                     
@@ -60,8 +60,7 @@ final class ProfileService {
                     completion(.success(profile))
                     
                 case .failure(let error):
-                    //                self.logger.error("[ProfileService.fetchProfile]: NetworkError – \(error)")
-                    print("[ProfileService.fetchProfile]: NetworkError – \(error)")
+                    self.logger.error("[fetchProfile]: NetworkError \(error.localizedDescription)")
                     completion(.failure(error))
                 }
             }
@@ -71,11 +70,10 @@ final class ProfileService {
         task.resume()
     }
     
-    // MARK: - Private Helpers
+    // MARK: - Requests
     private func makeProfileRequest(token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/me") else {
-            //            self.logger.error("[ProfileService.makeProfileRequest]: NetworkError – invalidURL")
-            print("[ProfileService.makeProfileRequest]: NetworkError – invalidURL")
+            logger.error("[makeProfileRequest]: NetworkError invalidURL")
             return nil
         }
         
@@ -85,4 +83,3 @@ final class ProfileService {
         return request
     }
 }
-

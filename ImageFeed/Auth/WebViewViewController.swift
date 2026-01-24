@@ -8,15 +8,16 @@ enum WebViewConstants {
     static let redirectPath = "/oauth/authorize/native"
 }
 
-// MARK: - Delegate
+// MARK: - Protocols
 protocol WebViewViewControllerDelegate: AnyObject {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String)
     func webViewViewControllerDidCancel(_ vc: WebViewViewController)
 }
 
-// MARK: - WebViewViewController
+// MARK: - Class
 final class WebViewViewController: UIViewController {
     
+    // MARK: - UI
     private lazy var webView: WKWebView = {
         let webView = WKWebView()
         webView.navigationDelegate = self
@@ -39,7 +40,7 @@ final class WebViewViewController: UIViewController {
     // MARK: - Dependencies
     weak var delegate: WebViewViewControllerDelegate?
     
-    // MARK: - Private properties
+    // MARK: - Private Properties
     private var estimatedProgressObservation: NSKeyValueObservation?
     
     // MARK: - Lifecycle
@@ -55,10 +56,16 @@ final class WebViewViewController: UIViewController {
         observeWebViewProgress()
     }
     
+    deinit {
+        estimatedProgressObservation?.invalidate()
+    }
+    
+    // MARK: - Actions
     @objc private func didTapBack() {
         dismiss(animated: true)
     }
     
+    // MARK: - Navigation
     private func setupNavigationBar() {
         let backButton = UIButton(type: .system)
         backButton.setImage(
@@ -83,6 +90,7 @@ final class WebViewViewController: UIViewController {
         navigationController?.navigationBar.shadowImage = UIImage()
     }
     
+    // MARK: - UI Setup
     private func setupUI() {
         view.backgroundColor = .white
         view.addSubview(progressView)
@@ -100,28 +108,28 @@ final class WebViewViewController: UIViewController {
         ])
     }
     
+    // MARK: - Loading
     private func loadAuthPage() {
         guard var components = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else {
-            //            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to create URLComponents")
-            print("[WebViewViewController.loadAuthPage]: Error – failed to create URLComponents")
+            logger.error("[loadAuthPage]: Error – failed to create URLComponents")
             return
         }
         
         components.queryItems = [
-            URLQueryItem(name: "client_id", value: Constants.accessKey),
-            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
+            URLQueryItem(name: "client_id", value: APIConstants.accessKey),
+            URLQueryItem(name: "redirect_uri", value: APIConstants.redirectURI),
             URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: Constants.accessScope)
+            URLQueryItem(name: "scope", value: APIConstants.accessScope)
         ]
         
         guard let url = components.url else {
-            //            self.logger.error("[WebViewViewController.loadAuthPage]: Error – failed to build auth URL")
-            print("[WebViewViewController.loadAuthPage]: Error – failed to build auth URL")
+            logger.error("[loadAuthPage]: Error – failed to build auth URL")
             return
         }
         webView.load(URLRequest(url: url))
     }
     
+    // MARK: - Observing
     private func observeWebViewProgress() {
         estimatedProgressObservation = webView.observe(
             \.estimatedProgress,
@@ -133,15 +141,12 @@ final class WebViewViewController: UIViewController {
         updateProgress()
     }
     
-    deinit {
-        estimatedProgressObservation?.invalidate()
-    }
-    
     private func updateProgress() {
         progressView.progress = Float(webView.estimatedProgress)
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
     }
     
+    // MARK: - Helpers
     private func extractCode(from navigationAction: WKNavigationAction) -> String? {
         guard
             let url = navigationAction.request.url,
@@ -157,7 +162,7 @@ final class WebViewViewController: UIViewController {
     }
 }
 
-// MARK: - WKNavigationDelegate
+// MARK: - Extensions
 extension WebViewViewController: WKNavigationDelegate {
     func webView(
         _ webView: WKWebView,
@@ -172,4 +177,3 @@ extension WebViewViewController: WKNavigationDelegate {
         }
     }
 }
-

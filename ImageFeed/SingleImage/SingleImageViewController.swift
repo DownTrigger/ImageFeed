@@ -1,8 +1,24 @@
 import UIKit
+import Logging
 
 final class SingleImageViewController: UIViewController {
     
-    // MARK: UI Elements
+    // MARK: - Logger
+    private let logger = Logger(label: "SingleImageViewController")
+    
+    // MARK: - Dependencies
+    private let imagesListService = ImagesListService.shared
+    
+    // MARK: - Public Properties
+    var imageURL: String?
+    var image: UIImage? {
+        didSet {
+            updateImage()
+        }
+    }
+    var photo: Photo?
+    
+    // MARK: - UI
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.delegate = self
@@ -45,24 +61,14 @@ final class SingleImageViewController: UIViewController {
         return button
     }()
     
-    // MARK: Properties
-    var imageURL: String?
-    var image: UIImage? {
-        didSet {
-            updateImage()
-        }
-    }
-    var photo: Photo?
-    private let imagesListService = ImagesListService.shared
-    
-    // MARK: Lifecycle
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
         guard photo != nil else {
-                assertionFailure("SingleImageViewController: photo must be set")
-                return
-            }
+            assertionFailure("SingleImageViewController: photo must be set")
+            return
+        }
         
         setupNavigationBar()
         setupUI()
@@ -84,7 +90,7 @@ final class SingleImageViewController: UIViewController {
         updateMinZoomScale(for: image)
     }
     
-    // MARK: Actions
+    // MARK: - Actions
     @objc private func didTapLike() {
         guard let photo = photo else { return }
         
@@ -98,7 +104,7 @@ final class SingleImageViewController: UIViewController {
                 self.likeButton.isEnabled = true
 
                 if case .failure(let error) = result {
-                    print("[SingleImageViewController.like]: \(error)")
+                    self.logger.error("[didTapLike]: \(String(describing: error)) \(photo.id)")
                 }
             }
         }
@@ -158,8 +164,7 @@ final class SingleImageViewController: UIViewController {
         }
     }
     
-    // MARK: Private Methods
-    
+    // MARK: - UI Setup
     private func setupUI() {
         view.backgroundColor = UIColor(resource: .ypBlack)
         setupConstraints()
@@ -215,6 +220,7 @@ final class SingleImageViewController: UIViewController {
         ])
     }
     
+    // MARK: - Helpers
     private func updateImage() {
         guard isViewLoaded, let image else { return }
         imageView.image = image
@@ -264,7 +270,7 @@ final class SingleImageViewController: UIViewController {
     }
 }
 
-// MARK: UIScrollViewDelegate
+// MARK: - UIScrollViewDelegate
 extension SingleImageViewController: UIScrollViewDelegate {
     
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
