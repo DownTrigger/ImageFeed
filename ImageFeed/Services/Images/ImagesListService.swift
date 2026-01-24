@@ -1,6 +1,10 @@
 import Foundation
+import Logging
 
 final class ImagesListService {
+
+    // MARK: - Logger
+    private let logger = Logger(label: "ImagesListService")
 
     // MARK: - Singleton
     static let shared = ImagesListService()
@@ -27,22 +31,19 @@ final class ImagesListService {
     private var likeTask: URLSessionTask?
 
     // MARK: - Public API
-
-    /// Загружает следующую страницу фотографий
     func fetchPhotosNextPage() {
         assert(Thread.isMainThread)
 
         guard !isLoading else { return }
         isLoading = true
 
-        // Отменяем предыдущий запрос, если он ещё идёт
         photoTask?.cancel()
         photoTask = nil
 
         let nextPage = (lastLoadedPage ?? 0) + 1
 
         guard let request = makePhotosRequest(page: nextPage) else {
-            print("[ImagesListService.fetchPhotosNextPage]: invalid request")
+            logger.error("[ImagesListService.fetchPhotosNextPage]: invalidRequest page=\(nextPage)")
             isLoading = false
             return
         }
@@ -75,7 +76,10 @@ final class ImagesListService {
                 )
 
             case .failure(let error):
-                print("[ImagesListService.fetchPhotosNextPage]: \(error)")
+                if let decodingError = error as? DecodingError {
+                    self.logger.error("[ImagesListService.fetchPhotosNextPage]: decodingError page=\(nextPage) error=\(decodingError)")
+                }
+                self.logger.error("[ImagesListService.fetchPhotosNextPage]: networkError page=\(nextPage) error=\(error)")
             }
         }
 
@@ -89,7 +93,7 @@ final class ImagesListService {
     ) {
         guard let token = tokenStorage.token else {
             let error = NSError(domain: "AuthError", code: 401)
-            print("[ImagesListService.fetchLikedPhotos]: no auth token")
+            logger.error("[ImagesListService.fetchLikedPhotos]: authError username=\(username)")
             completion(.failure(error))
             return
         }
@@ -138,7 +142,10 @@ final class ImagesListService {
                     completion(.success(photos))
 
                 case .failure(let error):
-                    print("[ImagesListService.fetchLikedPhotos]: \(error)")
+                    if let decodingError = error as? DecodingError {
+                        self.logger.error("[ImagesListService.fetchLikedPhotos]: decodingError username=\(username) error=\(decodingError)")
+                    }
+                    self.logger.error("[ImagesListService.fetchLikedPhotos]: networkError username=\(username) error=\(error)")
                     completion(.failure(error))
                 }
             }
@@ -146,8 +153,7 @@ final class ImagesListService {
 
         task.resume()
     }
-
-    /// Ставит или убирает лайк у фотографии
+    
     func changeLike(
         photoId: String,
         shouldLike: Bool,
@@ -155,20 +161,19 @@ final class ImagesListService {
     ) {
         assert(Thread.isMainThread)
 
-        // Отменяем предыдущий лайк-запрос
         likeTask?.cancel()
         likeTask = nil
 
         guard let token = tokenStorage.token else {
             let error = NSError(domain: "AuthError", code: 401)
-            print("[ImagesListService.changeLike]: no auth token")
+            logger.error("[ImagesListService.changeLike]: authError photoId=\(photoId)")
             completion(.failure(error))
             return
         }
 
         guard let request = makeLikeRequest(photoId: photoId, shouldLike: shouldLike, token: token) else {
             let error = NSError(domain: "InvalidRequest", code: 0)
-            print("[ImagesListService.changeLike]: invalid request")
+            logger.error("[ImagesListService.changeLike]: invalidRequest photoId=\(photoId)")
             completion(.failure(error))
             return
         }
@@ -214,7 +219,10 @@ final class ImagesListService {
                 completion(.success(()))
 
             case .failure(let error):
-                print("[ImagesListService.changeLike]: \(error)")
+                if let decodingError = error as? DecodingError {
+                    self.logger.error("[ImagesListService.changeLike]: decodingError photoId=\(photoId) error=\(decodingError)")
+                }
+                self.logger.error("[ImagesListService.changeLike]: networkError photoId=\(photoId) error=\(error)")
                 completion(.failure(error))
             }
 

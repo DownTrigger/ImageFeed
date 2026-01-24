@@ -17,6 +17,8 @@ final class ProfileViewController: UIViewController {
     private var profileImageServiceObserver: NSObjectProtocol?
     private var profileObserver: NSObjectProtocol?
     
+    private let dateFormatter = DateFormatterProvider.shared
+    
     // MARK: - UI Elements
     private lazy var profileImageView: UIImageView = {
         let imageView = UIImageView()
@@ -110,14 +112,6 @@ final class ProfileViewController: UIViewController {
         static let favoritesTitle = "Избранное"
         static let favoritesCount = "27"
     }
-    
-    // MARK: - Formatters
-    private lazy var dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        return formatter
-    }()
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -309,11 +303,13 @@ final class ProfileViewController: UIViewController {
     
     // MARK: - Actions
     @objc private func didTapLogoutButton() {
-        dataCleaner.clear { [weak self] in
+        AlertPresenter.showLogoutConfirmationAlert(on: self) { [weak self] in
             guard let self else { return }
-
-            self.tokenStorage.token = nil
-            self.resetRootController()
+            
+            dataCleaner.clear {
+                self.tokenStorage.token = nil
+                self.resetRootController()
+            }
         }
     }
     

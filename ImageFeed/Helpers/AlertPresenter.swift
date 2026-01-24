@@ -39,4 +39,24 @@ final class AlertPresenter {
         viewController.present(alert, animated: true)
     }
     
+    static func showLogoutConfirmationAlert(
+        on viewController: UIViewController,
+        onConfirm: @escaping () -> Void
+    ) {
+        let alert = UIAlertController(
+            title: "Выход из аккаунта",
+            message: "Вы уверены, что хотите выйти?",
+            preferredStyle: .alert
+        )
+
+        let cancelAction = UIAlertAction(title: "Отмена", style: .cancel)
+        let logoutAction = UIAlertAction(title: "Выйти", style: .destructive) { _ in
+            onConfirm()
+        }
+
+        alert.addAction(cancelAction)
+        alert.addAction(logoutAction)
+
+        viewController.present(alert, animated: true)
+    }
 }

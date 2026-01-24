@@ -52,7 +52,7 @@ final class SingleImageViewController: UIViewController {
             updateImage()
         }
     }
-    var photo: Photo!
+    var photo: Photo?
     private let imagesListService = ImagesListService.shared
     
     // MARK: Lifecycle
@@ -60,9 +60,9 @@ final class SingleImageViewController: UIViewController {
         super.viewDidLoad()
         
         guard photo != nil else {
-            assertionFailure("SingleImageViewController: photo must be set before presentation")
-            return
-        }
+                assertionFailure("SingleImageViewController: photo must be set")
+                return
+            }
         
         setupNavigationBar()
         setupUI()
@@ -86,8 +86,9 @@ final class SingleImageViewController: UIViewController {
     
     // MARK: Actions
     @objc private func didTapLike() {
+        guard let photo = photo else { return }
+        
         likeButton.isEnabled = false
-
         imagesListService.changeLike(
             photoId: photo.id,
             shouldLike: !photo.isLiked
@@ -118,13 +119,15 @@ final class SingleImageViewController: UIViewController {
     }
     
     @objc private func didReceiveImagesUpdate() {
+        guard let photo = photo else { return }
+        
         guard
             let updatedPhoto = imagesListService.photos.first(where: { $0.id == photo.id })
         else {
             return
         }
 
-        photo = updatedPhoto
+        self.photo = updatedPhoto
         updateLikeButton()
     }
     
@@ -132,7 +135,6 @@ final class SingleImageViewController: UIViewController {
     private func loadImage() {
         guard
             let imageURL,
-//            let url = URL(string: "https://example.com/broken_image.jpg") // потестит алерт
             let url = URL(string: imageURL)
         else {
             return
@@ -248,6 +250,8 @@ final class SingleImageViewController: UIViewController {
     }
     
     private func updateLikeButton() {
+        guard let photo = photo else { return }
+        
         let image = photo.isLiked
             ? UIImage(resource: .iconCircleLikeFilled)
             : UIImage(resource: .iconCircleLike)

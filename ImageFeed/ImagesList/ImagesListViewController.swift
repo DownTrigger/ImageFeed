@@ -20,17 +20,12 @@ final class ImagesListViewController: UIViewController {
     
     private var didAdjustInitialContentOffset = false
     private let imagesListService = ImagesListService.shared
+    private let dateFormatter = DateFormatterProvider.shared
     
     // MARK: - Properties
     private var photos: [Photo] = []
     
-    private lazy var dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        return formatter
-    }()
-    
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
