@@ -8,6 +8,7 @@ final class SplashViewController: UIViewController {
     
     // MARK: - Dependencies
     private let profileService = ProfileService.shared
+    private let imagesListService = ImagesListService.shared
     private let tokenStorage = OAuth2TokenStorage.shared
     private let authService = OAuth2Service.shared
     
@@ -88,6 +89,12 @@ final class SplashViewController: UIViewController {
             case let .success(profile):
                 UIBlockingProgressHUD.dismiss()
                 ProfileImageService.shared.fetchProfileImageURL(username: profile.username) { _ in }
+                self.imagesListService.fetchLikedPhotos(username: profile.username) { result in
+                    if case .failure(let error) = result {
+                        print("[SplashViewController.fetchLikedPhotos]: \(error)")
+                    }
+                }
+                
                 self.switchToTabBarController()
                 
             case let .failure(error):

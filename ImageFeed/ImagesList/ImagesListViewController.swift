@@ -74,61 +74,49 @@ final class ImagesListViewController: UIViewController {
     
     @objc private func didReceiveImagesUpdate() {
         DispatchQueue.main.async { [weak self] in
-            self?.updateTableViewAnimated()
-        }
-    }
-    
-    private func updateTableViewAnimated() {
-        let oldCount = photos.count
-        let newPhotos = imagesListService.photos
-        let newCount = newPhotos.count
+            guard let self else { return }
 
-        guard newCount > oldCount else {
-            return
-        }
+            let newPhotos = self.imagesListService.photos
+            let oldCount = self.photos.count
+            let newCount = newPhotos.count
 
-        photos = newPhotos
+            self.photos = newPhotos
 
-        let indexPaths = (oldCount..<newCount).map {
-            IndexPath(row: $0, section: 0)
-        }
-
-        tableView.performBatchUpdates {
-            tableView.insertRows(at: indexPaths, with: .automatic)
-        }
-    }
-    
-    private func didTapLikeButton(at indexPath: IndexPath) {
-        let photo = photos[indexPath.row]
-        imagesListService.changeLike(photoId: photo.id, isLike: !photo.isLiked) { [weak self] result in
-            switch result {
-            case .success:
-                self?.updateLikeState(photoId: photo.id)
-            case .failure(let error):
-                self?.logger.error("Failed to change like state: \(error.localizedDescription)")
+            if newCount > oldCount {
+                // Подгрузка новой страницы
+                let indexPaths = (oldCount..<newCount).map {
+                    IndexPath(row: $0, section: 0)
+                }
+                self.tableView.insertRows(at: indexPaths, with: .automatic)
+            } else {
+                // Изменение состояния лайков — обновляем видимые ячейки
+                let visibleIndexPaths = self.tableView.indexPathsForVisibleRows ?? []
+                self.tableView.reloadRows(at: visibleIndexPaths, with: .none)
             }
         }
     }
     
-    private func updateLikeState(photoId: String) {
-        guard let index = photos.firstIndex(where: { $0.id == photoId }) else { return }
-        let photo = photos[index]
-        let updatedPhoto = Photo(
-            id: photo.id,
-            size: photo.size,
-            createdAt: photo.createdAt,
-            description: photo.description,
-            regularImageURL: photo.regularImageURL,
-            largeImageURL: photo.largeImageURL,
-            isLiked: !photo.isLiked
-        )
-        photos[index] = updatedPhoto
-        let indexPath = IndexPath(row: index, section: 0)
-        DispatchQueue.main.async {
-            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+    private func didTapLikeButton(from cell: PhotoCell) {
+        guard let indexPath = tableView.indexPath(for: cell) else { return }
+        let photo = photos[indexPath.row]
+
+        cell.setLikeButtonEnabled(false)
+
+        imagesListService.changeLike(
+            photoId: photo.id,
+            shouldLike: !photo.isLiked
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                cell.setLikeButtonEnabled(true)
+
+                if case .success = result {
+                    self.photos = self.imagesListService.photos
+                    self.tableView.reloadRows(at: [indexPath], with: .none)
+                }
+            }
         }
     }
-    
     
     // MARK: - Setup
     private func setupTableView() {
@@ -173,8 +161,9 @@ extension ImagesListViewController {
             isLiked: photo.isLiked
         )
         
-        cell.onLikeButtonTapped = { [weak self] in
-            self?.didTapLikeButton(at: indexPath)
+        cell.onLikeButtonTapped = { [weak self, weak cell] in
+            guard let self, let cell else { return }
+            self.didTapLikeButton(from: cell)
         }
     }
 }
@@ -184,6 +173,7 @@ extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let singleImageViewController = SingleImageViewController()
         let photo = photos[indexPath.row]
+        singleImageViewController.photo = photo
         singleImageViewController.hidesBottomBarWhenPushed = true
         singleImageViewController.imageURL = photo.largeImageURL
         navigationController?.pushViewController(singleImageViewController, animated: true)

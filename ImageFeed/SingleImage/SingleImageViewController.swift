@@ -52,15 +52,30 @@ final class SingleImageViewController: UIViewController {
             updateImage()
         }
     }
+    var photo: Photo!
+    private let imagesListService = ImagesListService.shared
     
     // MARK: Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        guard photo != nil else {
+            assertionFailure("SingleImageViewController: photo must be set before presentation")
+            return
+        }
+        
         setupNavigationBar()
         setupUI()
         updateImage()
-        
         loadImage()
+        updateLikeButton()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(didReceiveImagesUpdate),
+            name: ImagesListService.didChangeNotification,
+            object: ImagesListService.shared
+        )
     }
     
     override func viewDidLayoutSubviews() {
@@ -71,7 +86,21 @@ final class SingleImageViewController: UIViewController {
     
     // MARK: Actions
     @objc private func didTapLike() {
-        print("like")
+        likeButton.isEnabled = false
+
+        imagesListService.changeLike(
+            photoId: photo.id,
+            shouldLike: !photo.isLiked
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.likeButton.isEnabled = true
+
+                if case .failure(let error) = result {
+                    print("[SingleImageViewController.like]: \(error)")
+                }
+            }
+        }
     }
     
     @objc private func didTapBack() {
@@ -86,6 +115,17 @@ final class SingleImageViewController: UIViewController {
         guard let image = image else { return }
         let share = UIActivityViewController(activityItems: [image], applicationActivities: nil)
         present(share, animated: true, completion: nil)
+    }
+    
+    @objc private func didReceiveImagesUpdate() {
+        guard
+            let updatedPhoto = imagesListService.photos.first(where: { $0.id == photo.id })
+        else {
+            return
+        }
+
+        photo = updatedPhoto
+        updateLikeButton()
     }
     
     // MARK: - Image Loading
@@ -192,6 +232,18 @@ final class SingleImageViewController: UIViewController {
         
         scrollView.contentInset = .zero
         scrollView.contentOffset = CGPoint(x: horizontalOffset, y: verticalOffset)
+    }
+    
+    private func updateLikeButton() {
+        let image = photo.isLiked
+            ? UIImage(resource: .iconCircleLikeFilled)
+            : UIImage(resource: .iconCircleLike)
+
+        likeButton.setImage(image, for: .normal)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 

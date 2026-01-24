@@ -7,10 +7,11 @@ final class ProfileViewController: UIViewController {
     private let tokenStorage = OAuth2TokenStorage.shared
     private let profileService = ProfileService.shared
     private let dataCleaner = WebViewDataCleaner.shared
-    private let imagesListService = ImagesListService.shared
     private var application: UIApplication {
         UIApplication.shared
     }
+    
+    private var previousLikedPhotos: [Photo] = []
     
     // MARK: - State
     private var profileImageServiceObserver: NSObjectProtocol?
@@ -111,10 +112,6 @@ final class ProfileViewController: UIViewController {
         return formatter
     }()
     
-    // MARK: - Properties
-    private var photos: [Photo] = []
-    private let today = Date()
-    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -122,7 +119,6 @@ final class ProfileViewController: UIViewController {
         setupConstraints()
         setupObservers()
         
-        imagesListService.fetchPhotosNextPage()
         
         updateProfileUI()
         updateAvatar()
@@ -189,9 +185,36 @@ final class ProfileViewController: UIViewController {
     }
     
     @objc private func didReceiveImagesUpdate() {
-        photos = imagesListService.photos
-        favoritesTableView.reloadData()
+        let newLikedPhotos = ImagesListService.shared.likedPhotos
+        let oldLikedPhotos = previousLikedPhotos
+
+        previousLikedPhotos = newLikedPhotos
+
+        let oldIDs = oldLikedPhotos.map { $0.id }
+        let newIDs = newLikedPhotos.map { $0.id }
+
+        favoritesValueLabel.text = "\(newLikedPhotos.count)"
+
+        // Найдём удалённые элементы
+        let deletedIndexes = oldIDs.enumerated()
+            .filter { !newIDs.contains($0.element) }
+            .map { IndexPath(row: $0.offset, section: 0) }
+
+        // Найдём добавленные элементы
+        let insertedIndexes = newIDs.enumerated()
+            .filter { !oldIDs.contains($0.element) }
+            .map { IndexPath(row: $0.offset, section: 0) }
+
+        favoritesTableView.performBatchUpdates {
+            if !deletedIndexes.isEmpty {
+                favoritesTableView.deleteRows(at: deletedIndexes, with: .automatic)
+            }
+            if !insertedIndexes.isEmpty {
+                favoritesTableView.insertRows(at: insertedIndexes, with: .automatic)
+            }
+        }
     }
+    
     
     // MARK: - Observers
     private func setupObservers() {
@@ -216,11 +239,11 @@ final class ProfileViewController: UIViewController {
             }
         
         NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(didReceiveImagesUpdate),
-                name: ImagesListService.didChangeNotification,
-                object: nil
-            )
+            self,
+            selector: #selector(didReceiveImagesUpdate),
+            name: ImagesListService.didChangeNotification,
+            object: ImagesListService.shared
+        )
     }
     
     // MARK: - UI Setup
@@ -279,6 +302,24 @@ final class ProfileViewController: UIViewController {
         }
     }
     
+    private func didTapUnlike(at indexPath: IndexPath, cell: PhotoCell) {
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
+
+        cell.setLikeButtonEnabled(false)
+
+        ImagesListService.shared.changeLike(
+            photoId: photo.id,
+            shouldLike: false
+        ) { result in
+            DispatchQueue.main.async {
+                cell.setLikeButtonEnabled(true)
+                if case .failure(let error) = result {
+                    print("[ProfileViewController.unlike]: \(error)")
+                }
+            }
+        }
+    }
+    
     // MARK: - Navigation
     private func resetRootController() {
         guard
@@ -298,7 +339,7 @@ final class ProfileViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension ProfileViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        photos.count
+        ImagesListService.shared.likedPhotos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -319,15 +360,16 @@ extension ProfileViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         
         let singleImageViewController = SingleImageViewController()
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
+        singleImageViewController.photo = photo
         singleImageViewController.hidesBottomBarWhenPushed = true
-        let photo = photos[indexPath.row]
         singleImageViewController.imageURL = photo.largeImageURL
         
         navigationController?.pushViewController(singleImageViewController, animated: true)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        let photo = photos[indexPath.row]
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
         
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let imageViewWidth = view.frame.width - imageInsets.left - imageInsets.right
@@ -340,7 +382,7 @@ extension ProfileViewController: UITableViewDelegate {
 // MARK: - Cell Configuration
 extension ProfileViewController {
     func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
-        let photo = photos[indexPath.row]
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
         let dateText = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
         
         cell.configure(
@@ -348,5 +390,15 @@ extension ProfileViewController {
                 dateText: dateText,
                 isLiked: photo.isLiked
             )
+        
+        cell.onLikeButtonTapped = { [weak self, weak cell] in
+            guard
+                let self,
+                let cell,
+                let indexPath = self.favoritesTableView.indexPath(for: cell)
+            else { return }
+
+            self.didTapUnlike(at: indexPath, cell: cell)
+        }
     }
 }

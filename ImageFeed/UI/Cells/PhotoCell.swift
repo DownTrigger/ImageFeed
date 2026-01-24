@@ -37,6 +37,12 @@ final class PhotoCell: UITableViewCell {
         cellImage.image = UIImage(resource: .photoPlaceholder)
     }
     
+    // MARK: - Public API
+    func setLikeButtonEnabled(_ isEnabled: Bool) {
+        likeButton.isEnabled = isEnabled
+        likeButton.alpha = isEnabled ? 1.0 : 0.5
+    }
+    
     // MARK: - Actions
     @objc private func didTapLikeButton() {
         onLikeButtonTapped?()
