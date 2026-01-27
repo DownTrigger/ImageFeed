@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class WebViewPresenter: WebViewPresenterProtocol {
     
     weak var view: WebViewViewControllerProtocol?

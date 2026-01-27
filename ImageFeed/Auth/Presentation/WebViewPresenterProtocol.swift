@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol WebViewPresenterProtocol {
     var view: WebViewViewControllerProtocol? { get set }
     

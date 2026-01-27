@@ -94,7 +94,9 @@ final class WebViewViewController: UIViewController, WebViewViewControllerProtoc
     
     private func observeProgress() {
         observation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] webView, _ in
-            self?.presenter?.didUpdateProgressValue(webView.estimatedProgress)
+            Task { @MainActor in
+                self?.presenter?.didUpdateProgressValue(webView.estimatedProgress)
+            }
         }
     }
 }
