@@ -71,9 +71,7 @@ final class ImagesListViewController: UIViewController {
     // MARK: - Actions
     @objc private func didReceiveImagesUpdate() {
         logger.info("[didReceiveImagesUpdate]: info received images update")
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-
+        DispatchQueue.main.async {
             let newPhotos = self.imagesListService.photos
             let oldCount = self.photos.count
             let newCount = newPhotos.count

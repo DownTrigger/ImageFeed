@@ -111,7 +111,6 @@ final class ImagesListService {
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<[PhotoResult], Error>) in
             guard let self else { return }
 
-            DispatchQueue.main.async {
                 switch result {
                 case .success(let photoResults):
                     let photos = photoResults.compactMap { result -> Photo? in
@@ -129,9 +128,7 @@ final class ImagesListService {
                     self.likedPhotos = photos
                     
                     self.photos = self.photos.map { photo in
-                        var updated = photo
-                        updated.isLiked = self.likedPhotoIDs.contains(photo.id)
-                        return updated
+                        photo.withLiked(self.likedPhotoIDs.contains(photo.id))
                     }
 
                     NotificationCenter.default.post(
@@ -148,7 +145,6 @@ final class ImagesListService {
                     self.logger.error("fetchLikedPhotos: networkError username=\(username) error=\(error)")
                     completion(.failure(error))
                 }
-            }
         }
 
         task.resume()
@@ -200,10 +196,9 @@ final class ImagesListService {
 
                     if shouldLike {
                         if let existing = self.likedPhotos.firstIndex(where: { $0.id == photoId }) {
-                            self.likedPhotos[existing].isLiked = true
+                            self.likedPhotos[existing] = self.likedPhotos[existing].withLiked(true)
                         } else if let photoInFeed = self.photos.first(where: { $0.id == photoId }) {
-                            var liked = photoInFeed
-                            liked.isLiked = true
+                            let liked = photoInFeed.withLiked(true)
                             self.likedPhotos.insert(liked, at: 0)
                         }
                     } else {

@@ -125,9 +125,8 @@ final class SingleImageViewController: UIViewController {
     }
     
     @objc private func didReceiveImagesUpdate() {
-        guard let photo = photo else { return }
-        
         guard
+            let photo = photo,
             let updatedPhoto = imagesListService.photos.first(where: { $0.id == photo.id })
         else {
             return

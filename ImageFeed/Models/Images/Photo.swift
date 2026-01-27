@@ -8,5 +8,17 @@ struct Photo {
     let description: String?
     let regularImageURL: String
     let largeImageURL: String
-    var isLiked: Bool
+    let isLiked: Bool
+    
+    func withLiked(_ isLiked: Bool) -> Photo {
+            Photo(
+                id: id,
+                size: size,
+                createdAt: createdAt,
+                description: description,
+                regularImageURL: regularImageURL,
+                largeImageURL: largeImageURL,
+                isLiked: isLiked
+            )
+        }
 }
