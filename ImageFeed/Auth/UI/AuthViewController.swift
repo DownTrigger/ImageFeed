@@ -56,15 +56,15 @@ final class AuthViewController: UIViewController {
     
     // MARK: - Navigation
     private func showWebView() {
+        let authHelper = AuthHelper()
+        let presenter = WebViewPresenter(authHelper: authHelper)
+
         let webViewViewController = WebViewViewController()
+        webViewViewController.presenter = presenter
         webViewViewController.delegate = self
+        presenter.view = webViewViewController
         
-        let navigationController = UINavigationController(
-            rootViewController: webViewViewController
-        )
-        navigationController.modalPresentationStyle = .fullScreen
-        
-        present(navigationController, animated: true)
+        navigationController?.pushViewController(webViewViewController, animated: true)
         logger.info("[showWebView]: Presented WebViewViewController")
     }
     
