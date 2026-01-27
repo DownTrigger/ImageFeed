@@ -1,28 +1,50 @@
 import UIKit
+import Kingfisher
 
 final class PhotoCell: UITableViewCell {
     
-    // MARK: - Identifier
-    static let reuseIdentifier = "PhotoCell"
+    // MARK: - Public API
+    var onLikeButtonTapped: (() -> Void)?
     
-    // MARK: - Configuration
     func configure(
-        image: UIImage?,
+        imageURL: String,
         dateText: String,
         isLiked: Bool
     ) {
-        cellImage.image = image
+        if let url = URL(string: imageURL) {
+            cellImage.kf.setImage(
+                with: url,
+                placeholder: UIImage(resource: .photoPlaceholder)
+            )
+        } else {
+            cellImage.image = nil
+        }
         dateLabel.text = dateText
         
         let likeImage = isLiked
-        ? UIImage(resource: .iconLikeFilled)
-        : UIImage(resource: .iconLike)
+            ? UIImage(resource: .iconLikeFilled)
+            : UIImage(resource: .iconLike)
         
         likeButton.setImage(likeImage, for: .normal)
     }
     
-    // MARK: - Private UI Elements
-    let cellImage: UIImageView = {
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        cellImage.kf.cancelDownloadTask()
+        cellImage.image = UIImage(resource: .photoPlaceholder)
+    }
+    
+    func setLikeButtonEnabled(_ isEnabled: Bool) {
+        likeButton.isEnabled = isEnabled
+        let alphaValue: CGFloat = isEnabled ? 1.0 : 0.5
+        likeButton.alpha = alphaValue
+    }
+    
+    // MARK: - Identifier
+    static let reuseIdentifier = "PhotoCell"
+    
+    // MARK: - UI
+    private lazy var cellImage: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill
         imageView.layer.cornerRadius = 16
@@ -31,15 +53,22 @@ final class PhotoCell: UITableViewCell {
         return imageView
     }()
     
-    let likeButton: UIButton = {
+    private lazy var likeButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("", for: .normal)
         button.tintColor = UIColor(resource: .ypRed)
         button.translatesAutoresizingMaskIntoConstraints = false
+        
+        if #available(iOS 14.0, *) {
+            button.addAction(UIAction { [weak self] _ in self?.didTapLikeButton() }, for: .touchUpInside)
+        } else {
+            button.addTarget(self, action: #selector(didTapLikeButton), for: .touchUpInside)
+        }
+        
         return button
     }()
     
-    let dateLabel: UILabel = {
+    private lazy var dateLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         label.textColor = UIColor(resource: .ypWhite)
@@ -55,7 +84,8 @@ final class PhotoCell: UITableViewCell {
     
     private let gradientLayer = CAGradientLayer()
     
-    // MARK: - Init
+    // MARK: - Lifecycle
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupViews()
@@ -69,6 +99,11 @@ final class PhotoCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    // MARK: - Actions
+    @objc private func didTapLikeButton() {
+        onLikeButtonTapped?()
+    }
+    
     // MARK: - Layout
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -79,9 +114,9 @@ final class PhotoCell: UITableViewCell {
     private func setupViews() {
         backgroundColor = UIColor(resource: .ypBlack)
         contentView.addSubview(cellImage)
-        contentView.addSubview(likeButton)
         contentView.addSubview(gradientView)
         contentView.addSubview(dateLabel)
+        contentView.addSubview(likeButton)
     }
     
     private func setupConstraints() {

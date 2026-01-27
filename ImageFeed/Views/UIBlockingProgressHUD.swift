@@ -1,7 +1,6 @@
 import UIKit
 import ProgressHUD
 
-// MARK: - UI Blocking
 final class UIBlockingProgressHUD {
     private static var window: UIWindow? {
         UIApplication.shared.windows.first
@@ -21,8 +20,9 @@ final class UIBlockingProgressHUD {
     
     private static func configureAppearance() {
         ProgressHUD.animationType = .activityIndicator
+        ProgressHUD.colorHUD = .white
+        ProgressHUD.colorAnimation = .black
         ProgressHUD.mediaSize = 40
         ProgressHUD.marginSize = 20
-        ProgressHUD.colorAnimation = .gray
     }
 }

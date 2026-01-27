@@ -2,12 +2,14 @@ import UIKit
 
 final class TabBarController: UITabBarController {
     
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         configureTabBarAppearance()
         setupViewControllers()
     }
     
+    // MARK: - Appearance
     private func configureTabBarAppearance() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -24,6 +26,7 @@ final class TabBarController: UITabBarController {
         }
     }
     
+    // MARK: - Setup
     private func setupViewControllers() {
         let imagesListViewController = ImagesListViewController()
         let imagesListNavController = UINavigationController(

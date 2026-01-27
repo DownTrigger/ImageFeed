@@ -1,8 +1,24 @@
 import UIKit
+import Logging
 
 final class SingleImageViewController: UIViewController {
     
-    // MARK: UI Elements
+    // MARK: - Logger
+    private let logger = Logger(label: "SingleImageViewController")
+    
+    // MARK: - Dependencies
+    private let imagesListService = ImagesListService.shared
+    
+    // MARK: - Public Properties
+    var imageURL: String?
+    var image: UIImage? {
+        didSet {
+            updateImage()
+        }
+    }
+    var photo: Photo?
+    
+    // MARK: - UI
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.delegate = self
@@ -45,19 +61,27 @@ final class SingleImageViewController: UIViewController {
         return button
     }()
     
-    // MARK: Properties
-    var image: UIImage? {
-        didSet {
-            updateImage()
-        }
-    }
-    
-    // MARK: Lifecycle
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        guard photo != nil else {
+            assertionFailure("SingleImageViewController: photo must be set")
+            return
+        }
+        
         setupNavigationBar()
         setupUI()
         updateImage()
+        loadImage()
+        updateLikeButton()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(didReceiveImagesUpdate),
+            name: ImagesListService.didChangeNotification,
+            object: ImagesListService.shared
+        )
     }
     
     override func viewDidLayoutSubviews() {
@@ -66,9 +90,24 @@ final class SingleImageViewController: UIViewController {
         updateMinZoomScale(for: image)
     }
     
-    // MARK: Actions
+    // MARK: - Actions
     @objc private func didTapLike() {
-        print("like")
+        guard let photo = photo else { return }
+        
+        likeButton.isEnabled = false
+        imagesListService.changeLike(
+            photoId: photo.id,
+            shouldLike: !photo.isLiked
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.likeButton.isEnabled = true
+
+                if case .failure(let error) = result {
+                    self.logger.error("[didTapLike]: \(String(describing: error)) \(photo.id)")
+                }
+            }
+        }
     }
     
     @objc private func didTapBack() {
@@ -85,8 +124,46 @@ final class SingleImageViewController: UIViewController {
         present(share, animated: true, completion: nil)
     }
     
-    // MARK: Private Methods
+    @objc private func didReceiveImagesUpdate() {
+        guard
+            let photo = photo,
+            let updatedPhoto = imagesListService.photos.first(where: { $0.id == photo.id })
+        else {
+            return
+        }
+
+        self.photo = updatedPhoto
+        updateLikeButton()
+    }
     
+    // MARK: - Image Loading
+    private func loadImage() {
+        guard
+            let imageURL,
+            let url = URL(string: imageURL)
+        else {
+            return
+        }
+        
+        UIBlockingProgressHUD.show()
+        imageView.kf.setImage(with: url, placeholder: UIImage(resource: .photoPlaceholder)) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            
+            guard let self else { return }
+            
+            switch result {
+            case .success(let imageResult):
+                self.image = imageResult.image
+                
+            case .failure:
+                AlertPresenter.showImageLoadAlert(on: self) { [weak self] in
+                    self?.loadImage()
+                }
+            }
+        }
+    }
+    
+    // MARK: - UI Setup
     private func setupUI() {
         view.backgroundColor = UIColor(resource: .ypBlack)
         setupConstraints()
@@ -142,6 +219,7 @@ final class SingleImageViewController: UIViewController {
         ])
     }
     
+    // MARK: - Helpers
     private func updateImage() {
         guard isViewLoaded, let image else { return }
         imageView.image = image
@@ -175,9 +253,23 @@ final class SingleImageViewController: UIViewController {
         scrollView.contentInset = .zero
         scrollView.contentOffset = CGPoint(x: horizontalOffset, y: verticalOffset)
     }
+    
+    private func updateLikeButton() {
+        guard let photo = photo else { return }
+        
+        let image = photo.isLiked
+            ? UIImage(resource: .iconCircleLikeFilled)
+            : UIImage(resource: .iconCircleLike)
+
+        likeButton.setImage(image, for: .normal)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
 }
 
-// MARK: UIScrollViewDelegate
+// MARK: - UIScrollViewDelegate
 extension SingleImageViewController: UIScrollViewDelegate {
     
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {

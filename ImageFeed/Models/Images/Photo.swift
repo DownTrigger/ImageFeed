@@ -1,0 +1,24 @@
+import Foundation
+import CoreGraphics
+
+struct Photo {
+    let id: String
+    let size: CGSize
+    let createdAt: Date?
+    let description: String?
+    let regularImageURL: String
+    let largeImageURL: String
+    let isLiked: Bool
+    
+    func withLiked(_ isLiked: Bool) -> Photo {
+            Photo(
+                id: id,
+                size: size,
+                createdAt: createdAt,
+                description: description,
+                regularImageURL: regularImageURL,
+                largeImageURL: largeImageURL,
+                isLiked: isLiked
+            )
+        }
+}

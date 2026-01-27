@@ -1,14 +1,15 @@
 import UIKit
 import Logging
 
-// MARK: - AuthViewControllerDelegate
+// MARK: - Protocols
 protocol AuthViewControllerDelegate: AnyObject {
     func authViewController(_ vc: AuthViewController, didReceiveCode code: String)
 }
 
-// MARK: - AuthViewController
+// MARK: - Class
 final class AuthViewController: UIViewController {
     
+    // MARK: - UI
     private lazy var logoImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(resource: .logoAuthScreen)
@@ -37,7 +38,7 @@ final class AuthViewController: UIViewController {
     // MARK: - Logger
     private let logger = Logger(label: "AuthViewController")
     
-    // MARK: - Public properties
+    // MARK: - Public Properties
     weak var delegate: AuthViewControllerDelegate?
     
     // MARK: - Lifecycle
@@ -46,6 +47,11 @@ final class AuthViewController: UIViewController {
         view.backgroundColor = UIColor(resource: .ypBlack)
         
         setupConstraints()
+    }
+    
+    // MARK: - Actions
+    @objc private func didTapLoginButton() {
+        showWebView()
     }
     
     // MARK: - Navigation
@@ -59,13 +65,10 @@ final class AuthViewController: UIViewController {
         navigationController.modalPresentationStyle = .fullScreen
         
         present(navigationController, animated: true)
+        logger.info("[showWebView]: Presented WebViewViewController")
     }
     
-    // MARK: - Action
-    @objc private func didTapLoginButton() {
-        showWebView()
-    }
-    
+    // MARK: - Layout
     private func setupConstraints() {
         view.addSubview(logoImageView)
         view.addSubview(loginButton)
@@ -82,16 +85,17 @@ final class AuthViewController: UIViewController {
             loginButton.heightAnchor.constraint(equalToConstant: 48)
         ])
     }
-    
 }
 
-// MARK: - WebViewViewControllerDelegate
+// MARK: - Extensions
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
+        logger.info("[webViewViewController(_:didAuthenticateWithCode:)]: Success code: \(code)")
         delegate?.authViewController(self, didReceiveCode: code)
     }
     
     func webViewViewControllerDidCancel(_ vc: WebViewViewController) {
+        logger.info("[webViewViewControllerDidCancel]: User cancelled authentication")
         vc.dismiss(animated: true)
     }
 }

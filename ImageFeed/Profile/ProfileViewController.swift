@@ -1,8 +1,12 @@
 import UIKit
 import Kingfisher
+import Logging
 
 final class ProfileViewController: UIViewController {
-    
+
+    // MARK: - Logger
+    private let logger = Logger(label: "ProfileViewController")
+
     // MARK: - Dependencies
     private let tokenStorage = OAuth2TokenStorage.shared
     private let profileService = ProfileService.shared
@@ -10,35 +14,41 @@ final class ProfileViewController: UIViewController {
     private var application: UIApplication {
         UIApplication.shared
     }
-    
-    // MARK: - State
+
+    // MARK: - Private Properties
+    private var previousLikedPhotos: [Photo] = []
+
+    // MARK: - Observers
     private var profileImageServiceObserver: NSObjectProtocol?
     private var profileObserver: NSObjectProtocol?
-    
-    // MARK: - UI Elements
+
+    // MARK: - Constants
+    private let dateFormatter = DateFormatterProvider.shared
+
+    // MARK: - UI
     private lazy var profileImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(resource: .userProfile)
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
-    
+
     private lazy var logoutButton: UIButton = {
         let buttonImage = UIImage(resource: .iconLogout)
         let button = UIButton(type: .system)
         button.setImage(buttonImage, for: .normal)
         button.tintColor = UIColor(resource: .ypRed)
         button.translatesAutoresizingMaskIntoConstraints = false
-        
+
         if #available(iOS 14.0, *) {
             button.addAction(UIAction { [weak self] _ in self?.didTapLogoutButton() }, for: .touchUpInside)
         } else {
             button.addTarget(self, action: #selector(didTapLogoutButton), for: .touchUpInside)
         }
-        
+
         return button
     }()
-    
+
     private lazy var nameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 23, weight: .bold)
@@ -46,7 +56,7 @@ final class ProfileViewController: UIViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-    
+
     private lazy var loginNameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
@@ -54,7 +64,7 @@ final class ProfileViewController: UIViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-    
+
     private lazy var descriptionLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
@@ -62,7 +72,7 @@ final class ProfileViewController: UIViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-    
+
     private lazy var favoritesLabel: UILabel = {
         let label = UILabel()
         label.text = ProfileConstants.favoritesTitle
@@ -71,7 +81,7 @@ final class ProfileViewController: UIViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-    
+
     private lazy var favoritesValueLabel: UILabel = {
         let label = UILabel()
         label.text = ProfileConstants.favoritesCount
@@ -84,7 +94,7 @@ final class ProfileViewController: UIViewController {
         label.layer.masksToBounds = true
         return label
     }()
-    
+
     private lazy var favoritesTableView: UITableView = {
         let tableView = UITableView()
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -95,45 +105,41 @@ final class ProfileViewController: UIViewController {
         tableView.separatorStyle = .none
         return tableView
     }()
-    
+
+    private lazy var emptyFavoritesImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(resource: .emptyState)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+
     // MARK: - Constants
     private enum ProfileConstants {
         static let favoritesTitle = "Избранное"
         static let favoritesCount = "27"
     }
-    
-    // MARK: - Formatters
-    private lazy var dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        return formatter
-    }()
-    
-    // MARK: - Properties
-    private let photosName: [String] = Array(0..<20).map{ "\($0)" }
-    
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         setupConstraints()
         setupObservers()
-        
+
         updateProfileUI()
         updateAvatar()
     }
-    
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)
     }
-    
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: false)
     }
-    
+
     deinit {
         if let profileObserver {
             NotificationCenter.default.removeObserver(profileObserver)
@@ -142,23 +148,23 @@ final class ProfileViewController: UIViewController {
             NotificationCenter.default.removeObserver(profileImageServiceObserver)
         }
     }
-    
+
     // MARK: - Screen Logic
     private func updateAvatar() {
         guard
             let profileImageURL = ProfileImageService.shared.avatarURL,
             let imageUrl = URL(string: profileImageURL)
         else {
-            print("[ProfileViewController.updateAvatar]: Error – invalid avatar URL")
+            logger.error("[updateAvatar]: Error – invalid avatar URL")
             return
         }
-        
-        print("imageUrl: \(imageUrl)")
-        
+
+        logger.debug("[updateAvatar]: imageUrl: \(imageUrl)")
+
         let placeholderImage = UIImage(resource: .avatarPlaceholder)
             .withTintColor(.lightGray, renderingMode: .alwaysOriginal)
             .withConfiguration(UIImage.SymbolConfiguration(pointSize: 70, weight: .regular, scale: .large))
-        
+
         let processor = RoundCornerImageProcessor(cornerRadius: 35)
         profileImageView.kf.indicatorType = .activity
         profileImageView.kf.setImage(
@@ -171,19 +177,51 @@ final class ProfileViewController: UIViewController {
                 .forceRefresh
             ])
     }
-    
+
     private func updateProfileDetails(with profile: Profile) {
         nameLabel.text = profile.name.isEmpty ? "Имя не указано" : profile.name
         loginNameLabel.text = profile.loginName.isEmpty ? "@неизвестный_пользователь" : profile.loginName
         descriptionLabel.text = (profile.bio?.isEmpty ?? true) ? "Профиль не заполнен" : profile.bio
-        
     }
-    
+
     private func updateProfileUI()  {
         guard let profile = profileService.profile else { return }
         updateProfileDetails(with: profile)
     }
-    
+
+    @objc private func didReceiveImagesUpdate() {
+        let newLikedPhotos = ImagesListService.shared.likedPhotos
+        let oldLikedPhotos = previousLikedPhotos
+
+        previousLikedPhotos = newLikedPhotos
+
+        let oldIDs = oldLikedPhotos.map { $0.id }
+        let newIDs = newLikedPhotos.map { $0.id }
+        let count = newLikedPhotos.count
+        favoritesValueLabel.text = "\(count)"
+        favoritesValueLabel.isHidden = count == 0
+        emptyFavoritesImageView.isHidden = count > 0
+
+        // Найдём удалённые элементы
+        let deletedIndexes = oldIDs.enumerated()
+            .filter { !newIDs.contains($0.element) }
+            .map { IndexPath(row: $0.offset, section: 0) }
+
+        // Найдём добавленные элементы
+        let insertedIndexes = newIDs.enumerated()
+            .filter { !oldIDs.contains($0.element) }
+            .map { IndexPath(row: $0.offset, section: 0) }
+
+        favoritesTableView.performBatchUpdates {
+            if !deletedIndexes.isEmpty {
+                favoritesTableView.deleteRows(at: deletedIndexes, with: .automatic)
+            }
+            if !insertedIndexes.isEmpty {
+                favoritesTableView.insertRows(at: insertedIndexes, with: .automatic)
+            }
+        }
+    }
+
     // MARK: - Observers
     private func setupObservers() {
         profileObserver = NotificationCenter.default
@@ -195,7 +233,7 @@ final class ProfileViewController: UIViewController {
                 guard let self else { return }
                 self.updateProfileUI()
             }
-        
+
         profileImageServiceObserver = NotificationCenter.default
             .addObserver(
                 forName: ProfileImageService.didChangeNotification,
@@ -205,8 +243,15 @@ final class ProfileViewController: UIViewController {
                 guard let self = self else { return }
                 self.updateAvatar()
             }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(didReceiveImagesUpdate),
+            name: ImagesListService.didChangeNotification,
+            object: ImagesListService.shared
+        )
     }
-    
+
     // MARK: - UI Setup
     private func setupConstraints() {
         view.addSubview(profileImageView)
@@ -217,52 +262,78 @@ final class ProfileViewController: UIViewController {
         view.addSubview(favoritesLabel)
         view.addSubview(favoritesValueLabel)
         view.addSubview(favoritesTableView)
-        
+        view.addSubview(emptyFavoritesImageView)
+
         NSLayoutConstraint.activate([
             profileImageView.widthAnchor.constraint(equalToConstant: 70),
             profileImageView.heightAnchor.constraint(equalToConstant: 70),
             profileImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 32),
             profileImageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            
+
             logoutButton.centerYAnchor.constraint(equalTo: profileImageView.centerYAnchor),
             logoutButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
             logoutButton.heightAnchor.constraint(equalToConstant: 44),
             logoutButton.widthAnchor.constraint(equalToConstant: 44),
-            
+
             nameLabel.topAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: 8),
             nameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
-            
+
             loginNameLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
             loginNameLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
-            
+
             descriptionLabel.topAnchor.constraint(equalTo: loginNameLabel.bottomAnchor, constant: 8),
             descriptionLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
-            
+
             favoritesLabel.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 22),
             favoritesLabel.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
-            
+
             favoritesValueLabel.centerYAnchor.constraint(equalTo: favoritesLabel.centerYAnchor),
             favoritesValueLabel.leadingAnchor.constraint(equalTo: favoritesLabel.trailingAnchor, constant: 8),
             favoritesValueLabel.heightAnchor.constraint(equalToConstant: 22),
             favoritesValueLabel.widthAnchor.constraint(equalToConstant: 40),
-            
+
             favoritesTableView.topAnchor.constraint(equalTo: favoritesLabel.bottomAnchor, constant: 12),
             favoritesTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             favoritesTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            favoritesTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            favoritesTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            emptyFavoritesImageView.topAnchor.constraint(equalTo: favoritesLabel.bottomAnchor, constant: 110),
+            emptyFavoritesImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyFavoritesImageView.heightAnchor.constraint(equalToConstant: 115),
+            emptyFavoritesImageView.widthAnchor.constraint(equalToConstant: 115)
         ])
     }
-    
+
     // MARK: - Actions
     @objc private func didTapLogoutButton() {
-        dataCleaner.clear { [weak self] in
+        AlertPresenter.showLogoutConfirmationAlert(on: self) { [weak self] in
             guard let self else { return }
 
-            self.tokenStorage.token = nil
-            self.resetRootController()
+            dataCleaner.clear {
+                self.tokenStorage.token = nil
+                self.resetRootController()
+            }
         }
     }
-    
+
+    private func didTapUnlike(at indexPath: IndexPath, cell: PhotoCell) {
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
+
+        cell.setLikeButtonEnabled(false)
+
+        ImagesListService.shared.changeLike(
+            photoId: photo.id,
+            shouldLike: false
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                cell.setLikeButtonEnabled(true)
+                if case .failure(let error) = result {
+                    self?.logger.error("[didTapUnlike]: Error \(error) photoId=\(photo.id)")
+                }
+            }
+        }
+    }
+
     // MARK: - Navigation
     private func resetRootController() {
         guard
@@ -282,18 +353,18 @@ final class ProfileViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension ProfileViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        photosName.count
+        ImagesListService.shared.likedPhotos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: PhotoCell.reuseIdentifier, for: indexPath)
         
-        guard let PhotoCell = cell as? PhotoCell else {
+        guard let photoCell = cell as? PhotoCell else {
             return UITableViewCell()
         }
         
-        configCell(for: PhotoCell, with: indexPath)
-        return PhotoCell
+        configCell(for: photoCell, with: indexPath)
+        return photoCell
     }
 }
 
@@ -303,43 +374,45 @@ extension ProfileViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         
         let singleImageViewController = SingleImageViewController()
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
+        singleImageViewController.photo = photo
         singleImageViewController.hidesBottomBarWhenPushed = true
-        singleImageViewController.image = UIImage(named: photosName[indexPath.row])
+        singleImageViewController.imageURL = photo.largeImageURL
         
         navigationController?.pushViewController(singleImageViewController, animated: true)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return 0
-        }
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
         
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let imageViewWidth = view.frame.width - imageInsets.left - imageInsets.right
-        let imageWidth = image.size.width
-        
-        guard imageWidth > 0 else {
-            print("Image width is zero")
-            return 0
-        }
-        
+        let imageWidth = photo.size.width
         let scale = imageViewWidth / imageWidth
-        let cellHeight = image.size.height * scale + imageInsets.top + imageInsets.bottom
-        return cellHeight
+        return photo.size.height * scale + imageInsets.top + imageInsets.bottom
     }
 }
 
 // MARK: - Cell Configuration
 extension ProfileViewController {
     func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
-        guard let image = UIImage(named: photosName[indexPath.row]) else {
-            return
+        let photo = ImagesListService.shared.likedPhotos[indexPath.row]
+        let dateText = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
+        
+        cell.configure(
+                imageURL: photo.regularImageURL,
+                dateText: dateText,
+                isLiked: photo.isLiked
+            )
+        
+        cell.onLikeButtonTapped = { [weak self, weak cell] in
+            guard
+                let self,
+                let cell,
+                let indexPath = self.favoritesTableView.indexPath(for: cell)
+            else { return }
+
+            self.didTapUnlike(at: indexPath, cell: cell)
         }
-        
-        cell.cellImage.image = image
-        cell.dateLabel.text = dateFormatter.string(from: Date())
-        
-        let likeImage = UIImage(resource: .iconLikeFilled)
-        cell.likeButton.setImage(likeImage, for: .normal)
     }
 }
