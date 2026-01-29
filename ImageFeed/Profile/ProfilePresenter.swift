@@ -7,7 +7,7 @@ final class ProfilePresenter: ProfilePresenterProtocol {
     private let logger = Logger(label: "ProfilePresenter")
 
     // MARK: - Dependencies
-    private weak var view: ProfileViewProtocol?
+    weak var view: ProfileViewProtocol?
     private let profileService: ProfileService
     private let profileImageService: ProfileImageService
     private let imagesListService: ImagesListService

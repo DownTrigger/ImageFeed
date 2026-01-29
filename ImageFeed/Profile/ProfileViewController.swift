@@ -8,7 +8,9 @@ final class ProfileViewController: UIViewController {
     private let logger = Logger(label: "ProfileViewController")
 
     // MARK: - Dependencies
-    private lazy var presenter: ProfilePresenterProtocol = ProfilePresenter(
+    var presenter: ProfilePresenterProtocol?
+
+    private lazy var defaultPresenter: ProfilePresenterProtocol = ProfilePresenter(
         view: self,
         profileService: ProfileService.shared,
         profileImageService: ProfileImageService.shared,
@@ -16,6 +18,10 @@ final class ProfileViewController: UIViewController {
         tokenStorage: OAuth2TokenStorage.shared,
         dataCleaner: WebViewDataCleaner.shared
     )
+
+    private var currentPresenter: ProfilePresenterProtocol {
+        presenter ?? defaultPresenter
+    }
     private var application: UIApplication {
         UIApplication.shared
     }
@@ -125,7 +131,7 @@ final class ProfileViewController: UIViewController {
         super.viewDidLoad()
 
         setupConstraints()
-        presenter.viewDidLoad()
+        currentPresenter.viewDidLoad()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -194,15 +200,15 @@ final class ProfileViewController: UIViewController {
     @objc private func didTapLogoutButton() {
         AlertPresenter.showLogoutConfirmationAlert(on: self) { [weak self] in
             guard let self else { return }
-            presenter.didConfirmLogout()
+            currentPresenter.didConfirmLogout()
         }
     }
 
     private func didTapUnlike(at indexPath: IndexPath, cell: PhotoCell) {
-        let photoId = presenter.likedPhotoId(at: indexPath.row)
+        let photoId = currentPresenter.likedPhotoId(at: indexPath.row)
         cell.setLikeButtonEnabled(false)
 
-        presenter.didTapUnlike(photoId: photoId) { [weak self] result in
+        currentPresenter.didTapUnlike(photoId: photoId) { [weak self] result in
             DispatchQueue.main.async {
                 cell.setLikeButtonEnabled(true)
                 if case .failure(let error) = result {
@@ -231,7 +237,7 @@ final class ProfileViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension ProfileViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        presenter.likedPhotosCount
+        currentPresenter.likedPhotosCount
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -252,7 +258,7 @@ extension ProfileViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         
         let singleImageViewController = SingleImageViewController()
-        let photo = presenter.likedPhoto(at: indexPath.row)
+        let photo = currentPresenter.likedPhoto(at: indexPath.row)
         singleImageViewController.photo = photo
         singleImageViewController.hidesBottomBarWhenPushed = true
         singleImageViewController.imageURL = photo.largeImageURL
@@ -261,7 +267,7 @@ extension ProfileViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        let photo = presenter.likedPhoto(at: indexPath.row)
+        let photo = currentPresenter.likedPhoto(at: indexPath.row)
         
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let imageViewWidth = view.frame.width - imageInsets.left - imageInsets.right
@@ -274,7 +280,7 @@ extension ProfileViewController: UITableViewDelegate {
 // MARK: - Cell Configuration
 extension ProfileViewController {
     func configCell(for cell: PhotoCell, with indexPath: IndexPath) {
-        let photo = presenter.likedPhoto(at: indexPath.row)
+        let photo = currentPresenter.likedPhoto(at: indexPath.row)
         let dateText = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
         
         cell.configure(

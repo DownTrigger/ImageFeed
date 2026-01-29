@@ -7,10 +7,16 @@ final class ImagesListViewController: UIViewController {
     private let logger = Logger(label: "ImagesListViewController")
 
     // MARK: - Dependencies
-    private lazy var presenter: ImagesListPresenterProtocol = ImagesListPresenter(
+    var presenter: ImagesListPresenterProtocol?
+
+    private lazy var defaultPresenter: ImagesListPresenterProtocol = ImagesListPresenter(
         view: self,
         imagesListService: ImagesListService.shared
     )
+
+    private var currentPresenter: ImagesListPresenterProtocol {
+        presenter ?? defaultPresenter
+    }
     private let dateFormatter = DateFormatterProvider.shared
 
     // MARK: - State
@@ -35,7 +41,7 @@ final class ImagesListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
-        presenter.viewDidLoad()
+        currentPresenter.viewDidLoad()
     }
     
     override func viewDidLayoutSubviews() {
@@ -71,7 +77,7 @@ final class ImagesListViewController: UIViewController {
 
         cell.setLikeButtonEnabled(false)
 
-        presenter.didTapLike(photoId: photo.id) { [weak self] result in
+        currentPresenter.didTapLike(photoId: photo.id) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self else { return }
                 cell.setLikeButtonEnabled(true)
@@ -136,7 +142,7 @@ extension ImagesListViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        presenter.willDisplayRow(at: indexPath.row, totalCount: photos.count)
+        currentPresenter.willDisplayRow(at: indexPath.row, totalCount: photos.count)
     }
 }
 

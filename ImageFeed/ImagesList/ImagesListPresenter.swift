@@ -7,7 +7,7 @@ final class ImagesListPresenter: ImagesListPresenterProtocol {
     private let logger = Logger(label: "ImagesListPresenter")
 
     // MARK: - Dependencies
-    private weak var view: ImagesListViewProtocol?
+    weak var view: ImagesListViewProtocol?
     private let imagesListService: ImagesListService
 
     // MARK: - State
