@@ -32,6 +32,7 @@ final class AuthViewController: UIViewController {
         } else {
             button.addTarget(self, action: #selector(didTapLoginButton), for: .touchUpInside)
         }
+        button.accessibilityIdentifier = "Authenticate"
         return button
     }()
     

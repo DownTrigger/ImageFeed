@@ -51,6 +51,7 @@ final class SingleImageViewController: UIViewController {
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(UIImage(resource: .iconCircleLike), for: .normal)
+        button.accessibilityIdentifier = "circleLikeButton"
         
         if #available(iOS 14.0, *) {
             button.addAction(UIAction { [weak self] _ in self?.didTapLike() }, for: .touchUpInside)
@@ -173,6 +174,7 @@ final class SingleImageViewController: UIViewController {
         let backButton = UIButton(type: .system)
         backButton.setImage(UIImage(resource: .iconBackChevronWV), for: .normal)
         backButton.tintColor = UIColor(resource: .ypWhite)
+        backButton.accessibilityIdentifier = "backButton"
         
         if #available(iOS 14.0, *) {
             backButton.addAction(UIAction { [weak self] _ in self?.didTapBack() }, for: .touchUpInside)

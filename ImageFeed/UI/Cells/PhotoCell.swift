@@ -64,7 +64,7 @@ final class PhotoCell: UITableViewCell {
         } else {
             button.addTarget(self, action: #selector(didTapLikeButton), for: .touchUpInside)
         }
-        
+        button.accessibilityIdentifier = "likeButton"
         return button
     }()
     

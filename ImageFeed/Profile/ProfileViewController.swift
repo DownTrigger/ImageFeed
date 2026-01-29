@@ -52,7 +52,7 @@ final class ProfileViewController: UIViewController {
         } else {
             button.addTarget(self, action: #selector(didTapLogoutButton), for: .touchUpInside)
         }
-
+        button.accessibilityIdentifier = "logoutButton"
         return button
     }()
 
@@ -220,10 +220,7 @@ final class ProfileViewController: UIViewController {
 
     // MARK: - Navigation
     private func resetRootController() {
-        guard
-            let windowScene = application.connectedScenes.first as? UIWindowScene,
-            let window = windowScene.windows.first
-        else {
+        guard let window = view.window else {
             assertionFailure("Не удалось получить window")
             return
         }

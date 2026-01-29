@@ -125,18 +125,17 @@ final class ImagesListService {
                         )
                     }
 
-                    self.likedPhotos = photos
-                    
-                    self.photos = self.photos.map { photo in
-                        photo.withLiked(self.likedPhotoIDs.contains(photo.id))
+                    DispatchQueue.main.async {
+                        self.likedPhotos = photos
+                        self.photos = self.photos.map { photo in
+                            photo.withLiked(self.likedPhotoIDs.contains(photo.id))
+                        }
+                        NotificationCenter.default.post(
+                            name: Self.didChangeNotification,
+                            object: self
+                        )
+                        completion(.success(photos))
                     }
-
-                    NotificationCenter.default.post(
-                        name: Self.didChangeNotification,
-                        object: self
-                    )
-                    
-                    completion(.success(photos))
 
                 case .failure(let error):
                     if let decodingError = error as? DecodingError {
@@ -179,39 +178,40 @@ final class ImagesListService {
 
             switch result {
             case .success:
-                if let index = self.photos.firstIndex(where: { $0.id == photoId }) {
-                    let photo = self.photos[index]
+                DispatchQueue.main.async {
+                    if let index = self.photos.firstIndex(where: { $0.id == photoId }) {
+                        let photo = self.photos[index]
 
-                    let newPhoto = Photo(
-                        id: photo.id,
-                        size: photo.size,
-                        createdAt: photo.createdAt,
-                        description: photo.description,
-                        regularImageURL: photo.regularImageURL,
-                        largeImageURL: photo.largeImageURL,
-                        isLiked: shouldLike
-                    )
+                        let newPhoto = Photo(
+                            id: photo.id,
+                            size: photo.size,
+                            createdAt: photo.createdAt,
+                            description: photo.description,
+                            regularImageURL: photo.regularImageURL,
+                            largeImageURL: photo.largeImageURL,
+                            isLiked: shouldLike
+                        )
 
-                    self.photos[index] = newPhoto
+                        self.photos[index] = newPhoto
 
-                    if shouldLike {
-                        if let existing = self.likedPhotos.firstIndex(where: { $0.id == photoId }) {
-                            self.likedPhotos[existing] = self.likedPhotos[existing].withLiked(true)
-                        } else if let photoInFeed = self.photos.first(where: { $0.id == photoId }) {
-                            let liked = photoInFeed.withLiked(true)
-                            self.likedPhotos.insert(liked, at: 0)
+                        if shouldLike {
+                            if let existing = self.likedPhotos.firstIndex(where: { $0.id == photoId }) {
+                                self.likedPhotos[existing] = self.likedPhotos[existing].withLiked(true)
+                            } else if let photoInFeed = self.photos.first(where: { $0.id == photoId }) {
+                                let liked = photoInFeed.withLiked(true)
+                                self.likedPhotos.insert(liked, at: 0)
+                            }
+                        } else {
+                            self.likedPhotos.removeAll { $0.id == photoId }
                         }
-                    } else {
-                        self.likedPhotos.removeAll { $0.id == photoId }
                     }
+
+                    NotificationCenter.default.post(
+                        name: Self.didChangeNotification,
+                        object: self
+                    )
+                    completion(.success(()))
                 }
-
-                NotificationCenter.default.post(
-                    name: Self.didChangeNotification,
-                    object: self
-                )
-
-                completion(.success(()))
 
             case .failure(let error):
                 if let decodingError = error as? DecodingError {
