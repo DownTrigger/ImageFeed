@@ -2,11 +2,11 @@ import UIKit
 import WebKit
 
 final class WebViewViewController: UIViewController, WebViewViewControllerProtocol {
-    
+
     // MARK: - Dependencies
     var presenter: WebViewPresenterProtocol?
     weak var delegate: WebViewViewControllerDelegate?
-    
+
     // MARK: - UI
     private lazy var webView: WKWebView = {
         let webView = WKWebView()
@@ -25,7 +25,7 @@ final class WebViewViewController: UIViewController, WebViewViewControllerProtoc
     }()
     
     private var observation: NSKeyValueObservation?
-    
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,8 +62,8 @@ final class WebViewViewController: UIViewController, WebViewViewControllerProtoc
             dismiss(animated: true)
         }
     }
-    
-    // MARK: - Protocol methods
+
+    // MARK: - WebViewViewControllerProtocol
     func load(request: URLRequest) {
         webView.load(request)
     }
@@ -75,8 +75,8 @@ final class WebViewViewController: UIViewController, WebViewViewControllerProtoc
     func setProgressHidden(_ isHidden: Bool) {
         progressView.isHidden = isHidden
     }
-    
-    // MARK: - Private
+
+    // MARK: - Setup
     private func setupUI() {
         view.addSubview(progressView)
         view.addSubview(webView)
@@ -102,6 +102,7 @@ final class WebViewViewController: UIViewController, WebViewViewControllerProtoc
     }
 }
 
+// MARK: - WKNavigationDelegate
 extension WebViewViewController: WKNavigationDelegate {
     func webView(
         _ webView: WKWebView,

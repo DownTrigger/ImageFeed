@@ -2,9 +2,11 @@ import WebKit
 
 final class WebViewDataCleaner {
 
+    // MARK: - Singleton
     static let shared = WebViewDataCleaner()
     private init() {}
 
+    // MARK: - Public API
     func clear(completion: @escaping () -> Void) {
         let dataStore = WKWebsiteDataStore.default()
         

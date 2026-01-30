@@ -5,4 +5,3 @@ protocol ImagesListViewProtocol: AnyObject {
     func insertRows(at indexPaths: [IndexPath])
     func reloadVisibleRows()
 }
-

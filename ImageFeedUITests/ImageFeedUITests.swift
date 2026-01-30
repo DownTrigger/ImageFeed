@@ -76,7 +76,10 @@ final class ImageFeedUITests: XCTestCase {
 
     func testProfile() throws {
         let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+
+        // Подождать, пока открывается и загружается экран ленты (первый таб по умолчанию)
+        XCTAssertTrue(app.tables["ImagesListTable"].waitForExistence(timeout: 10))
 
         let profileTab = tabBar.buttons.element(boundBy: 1)
         profileTab.tap()

@@ -26,10 +26,8 @@ final class ProfileViewController: UIViewController {
         UIApplication.shared
     }
 
-    // MARK: - Private Properties
+    // MARK: - State
     private var state: ProfileState = .empty
-
-    // MARK: - Constants
     private let dateFormatter = DateFormatterProvider.shared
 
     // MARK: - UI
@@ -144,7 +142,7 @@ final class ProfileViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: false)
     }
 
-    // MARK: - UI Setup
+    // MARK: - Setup
     private func setupConstraints() {
         view.addSubview(profileImageView)
         view.addSubview(logoutButton)
@@ -212,7 +210,7 @@ final class ProfileViewController: UIViewController {
             DispatchQueue.main.async {
                 cell.setLikeButtonEnabled(true)
                 if case .failure(let error) = result {
-                    self?.logger.error("[didTapUnlike]: Error \(error) photoId=\(photoId)")
+                    self?.logger.error("[didTapUnlike]: \(error.localizedDescription) photoId=\(photoId)")
                 }
             }
         }
@@ -220,10 +218,7 @@ final class ProfileViewController: UIViewController {
 
     // MARK: - Navigation
     private func resetRootController() {
-        guard let window = view.window else {
-            assertionFailure("Не удалось получить window")
-            return
-        }
+        guard let window = view.window else { return }
 
         let splashViewController = SplashViewController()
         window.rootViewController = splashViewController
@@ -281,10 +276,10 @@ extension ProfileViewController {
         let dateText = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
         
         cell.configure(
-                imageURL: photo.regularImageURL,
-                dateText: dateText,
-                isLiked: photo.isLiked
-            )
+            imageURL: photo.regularImageURL,
+            dateText: dateText,
+            isLiked: photo.isLiked
+        )
         
         cell.onLikeButtonTapped = { [weak self, weak cell] in
             guard

@@ -41,10 +41,7 @@ final class OAuth2Service {
         }
         
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuth2TokenResponseBody, Error>) in
-            guard
-                let self = self,
-                self.lastCode == requestCode
-            else {
+            guard let self, self.lastCode == requestCode else {
                 return
             }
                 
@@ -55,7 +52,7 @@ final class OAuth2Service {
                 completion(.success(token))
                 
             case .failure(let error):
-                self.logger.error("[fetchOAuthToken]: NetworkError – \(error)")
+                self.logger.error("[fetchOAuthToken]: \(error.localizedDescription)")
                 completion(.failure(error))
             }
     
@@ -69,7 +66,7 @@ final class OAuth2Service {
     // MARK: - Requests
     private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard var components = URLComponents(string: "https://unsplash.com/oauth/token") else {
-            logger.error("[makeOAuthTokenRequest]: Failed to create URLComponents")
+            logger.error("[makeOAuthTokenRequest]: failed to create URLComponents")
             return nil
         }
         
@@ -82,7 +79,7 @@ final class OAuth2Service {
         ]
         
         guard let url = components.url else {
-            logger.error("[makeOAuthTokenRequest]: Failed to build URL")
+            logger.error("[makeOAuthTokenRequest]: failed to build URL")
             return nil
         }
         

@@ -6,9 +6,12 @@ protocol AuthViewControllerDelegate: AnyObject {
     func authViewController(_ vc: AuthViewController, didReceiveCode code: String)
 }
 
-// MARK: - Class
+// MARK: - AuthViewController
 final class AuthViewController: UIViewController {
-    
+
+    // MARK: - Logger
+    private let logger = Logger(label: "AuthViewController")
+
     // MARK: - UI
     private lazy var logoImageView: UIImageView = {
         let imageView = UIImageView()
@@ -35,10 +38,7 @@ final class AuthViewController: UIViewController {
         button.accessibilityIdentifier = "Authenticate"
         return button
     }()
-    
-    // MARK: - Logger
-    private let logger = Logger(label: "AuthViewController")
-    
+
     // MARK: - Public Properties
     weak var delegate: AuthViewControllerDelegate?
     
@@ -59,17 +59,15 @@ final class AuthViewController: UIViewController {
     private func showWebView() {
         let authHelper = AuthHelper()
         let presenter = WebViewPresenter(authHelper: authHelper)
-
         let webViewViewController = WebViewViewController()
         webViewViewController.presenter = presenter
         webViewViewController.delegate = self
         presenter.view = webViewViewController
-        
         navigationController?.pushViewController(webViewViewController, animated: true)
         logger.info("[showWebView]: Presented WebViewViewController")
     }
-    
-    // MARK: - Layout
+
+    // MARK: - Setup
     private func setupConstraints() {
         view.addSubview(logoImageView)
         view.addSubview(loginButton)
@@ -88,7 +86,7 @@ final class AuthViewController: UIViewController {
     }
 }
 
-// MARK: - Extensions
+// MARK: - WebViewViewControllerDelegate
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
         logger.info("[webViewViewController(_:didAuthenticateWithCode:)]: Success code: \(code)")

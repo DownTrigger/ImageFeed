@@ -2,14 +2,16 @@ import Foundation
 
 @MainActor
 final class WebViewPresenter: WebViewPresenterProtocol {
-    
+
+    // MARK: - Dependencies
     weak var view: WebViewViewControllerProtocol?
     private let authHelper: AuthHelperProtocol
-    
+
     init(authHelper: AuthHelperProtocol) {
         self.authHelper = authHelper
     }
-    
+
+    // MARK: - Public
     func viewDidLoad() {
         guard let request = authHelper.authRequest() else {
             return
@@ -33,3 +35,4 @@ final class WebViewPresenter: WebViewPresenterProtocol {
         abs(value - 1.0) <= 0.0001
     }
 }
+

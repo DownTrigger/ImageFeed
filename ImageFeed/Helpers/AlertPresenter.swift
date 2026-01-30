@@ -1,15 +1,9 @@
 import UIKit
-import Logging
 
 final class AlertPresenter {
-    
-    // MARK: - Logger
-    private static let logger = Logger(label: "AlertPresenter")
-    
+
     // MARK: - Public API
     static func showAuthErrorAlert(on viewController: UIViewController, onDismiss: @escaping () -> Void) {
-        logger.info("[showAuthErrorAlert]: show alert")
-        
         let alert = UIAlertController(
             title: "Что-то пошло не так(",
             message: "Не удалось войти в систему",
@@ -28,8 +22,6 @@ final class AlertPresenter {
         on viewController: UIViewController,
         onRetry: @escaping () -> Void
     ) {
-        logger.info("[showImageLoadAlert]: show alert")
-        
         let alert = UIAlertController(
             title: "Что-то пошло не так",
             message: "Попробовать ещё раз?",
@@ -52,8 +44,6 @@ final class AlertPresenter {
         on viewController: UIViewController,
         onConfirm: @escaping () -> Void
     ) {
-        logger.info("[showLogoutConfirmationAlert]: show alert")
-        
         let alert = UIAlertController(
             title: "Выход из аккаунта",
             message: "Вы уверены, что хотите выйти?",

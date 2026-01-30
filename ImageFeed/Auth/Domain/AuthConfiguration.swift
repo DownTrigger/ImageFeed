@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - APIConstants
 enum APIConstants {
     static let accessKey = "5zkiCmpxIDr9CzHKmyyTPy6v9vfk65Up_BlP4ljVSwE"
     static let secretKey = "6dUsGiJzOt7h268hF-F1yZMrwQXQoeriacPbd2x7LPw"
@@ -10,6 +11,7 @@ enum APIConstants {
     static let unsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
 }
 
+// MARK: - AuthConfiguration
 struct AuthConfiguration {
     let accessKey: String
     let secretKey: String

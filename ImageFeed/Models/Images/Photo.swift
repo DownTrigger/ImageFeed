@@ -11,14 +11,14 @@ struct Photo {
     let isLiked: Bool
     
     func withLiked(_ isLiked: Bool) -> Photo {
-            Photo(
-                id: id,
-                size: size,
-                createdAt: createdAt,
-                description: description,
-                regularImageURL: regularImageURL,
-                largeImageURL: largeImageURL,
-                isLiked: isLiked
-            )
-        }
+        Photo(
+            id: id,
+            size: size,
+            createdAt: createdAt,
+            description: description,
+            regularImageURL: regularImageURL,
+            largeImageURL: largeImageURL,
+            isLiked: isLiked
+        )
+    }
 }

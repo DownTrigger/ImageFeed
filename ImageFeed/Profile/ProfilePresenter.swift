@@ -14,17 +14,11 @@ final class ProfilePresenter: ProfilePresenterProtocol {
     private let tokenStorage: OAuth2TokenStorage
     private let dataCleaner: WebViewDataCleaner
 
-    // MARK: - Observers
+    // MARK: - State
+    private var previousLikedPhotos: [Photo] = []
     private var profileObserver: NSObjectProtocol?
     private var avatarObserver: NSObjectProtocol?
     private var imagesObserver: NSObjectProtocol?
-
-    // MARK: - State
-    private var previousLikedPhotos: [Photo] = []
-
-    var likedPhotosCount: Int {
-        imagesListService.likedPhotos.count
-    }
 
     init(
         view: ProfileViewProtocol,
@@ -48,10 +42,16 @@ final class ProfilePresenter: ProfilePresenterProtocol {
         if let imagesObserver { NotificationCenter.default.removeObserver(imagesObserver) }
     }
 
+    // MARK: - Lifecycle
     func viewDidLoad() {
         setupObservers()
         previousLikedPhotos = imagesListService.likedPhotos
         renderFullState()
+    }
+
+    // MARK: - Public API
+    var likedPhotosCount: Int {
+        imagesListService.likedPhotos.count
     }
 
     func likedPhoto(at index: Int) -> Photo {
@@ -65,7 +65,7 @@ final class ProfilePresenter: ProfilePresenterProtocol {
     func didTapUnlike(photoId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         imagesListService.changeLike(photoId: photoId, shouldLike: false) { [weak self] result in
             if case .failure(let error) = result {
-                self?.logger.error("[didTapUnlike]: error=\(error) photoId=\(photoId)")
+                self?.logger.error("[didTapUnlike]: \(error.localizedDescription) photoId=\(photoId)")
             }
             completion(result)
         }
@@ -110,8 +110,6 @@ final class ProfilePresenter: ProfilePresenterProtocol {
     private func didReceiveImagesUpdate() {
         previousLikedPhotos = imagesListService.likedPhotos
         renderFullState()
-        // Всегда перезагружаем таблицу: к моменту уведомления сервис уже обновлён,
-        // batch update (insert/delete) даёт рассинхрон с numberOfRowsInSection и краш
         view?.reloadFavorites()
     }
 

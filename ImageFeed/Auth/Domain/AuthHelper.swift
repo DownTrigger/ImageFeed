@@ -1,12 +1,15 @@
 import Foundation
 
 final class AuthHelper: AuthHelperProtocol {
+
+    // MARK: - Dependencies
     private let configuration: AuthConfiguration
-    
+
     init(configuration: AuthConfiguration = .standard) {
         self.configuration = configuration
     }
-    
+
+    // MARK: - Public
     func authRequest() -> URLRequest? {
         guard let url = authURL() else {
             return nil
