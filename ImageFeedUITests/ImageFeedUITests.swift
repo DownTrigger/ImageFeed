@@ -52,7 +52,7 @@ final class ImageFeedUITests: XCTestCase {
         XCTAssertTrue(firstCell.waitForExistence(timeout: 15))
 
         table.swipeUp()
-
+        
         let likeButton = firstCell.buttons["likeButton"]
         XCTAssertTrue(likeButton.waitForExistence(timeout: 5))
         likeButton.tap()
@@ -69,7 +69,7 @@ final class ImageFeedUITests: XCTestCase {
         let image = app.scrollViews.images.element(boundBy: 0)
         XCTAssertTrue(image.waitForExistence(timeout: 5))
         image.pinch(withScale: 3, velocity: 1)
-        image.pinch(withScale: 1, velocity: -1)
+        image.pinch(withScale: 0.5, velocity: -1)
         
         backButton.tap()
     }
@@ -78,7 +78,6 @@ final class ImageFeedUITests: XCTestCase {
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
 
-        // Подождать, пока открывается и загружается экран ленты (первый таб по умолчанию)
         XCTAssertTrue(app.tables["ImagesListTable"].waitForExistence(timeout: 10))
 
         let profileTab = tabBar.buttons.element(boundBy: 1)
