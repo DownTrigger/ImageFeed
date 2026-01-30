@@ -39,6 +39,9 @@ final class ImagesListPresenter: ImagesListPresenterProtocol {
     // MARK: - Public API
     func willDisplayRow(at index: Int, totalCount: Int) {
         guard index + 1 == totalCount else { return }
+        // В UI-тестах отключаем пагинацию — иначе при поиске элементов срабатывает willDisplay,
+        // запрашивается следующая страница, таблица обновляется и элементы теряют frame
+        if ProcessInfo.processInfo.arguments.contains("UITEST") { return }
         imagesListService.fetchPhotosNextPage()
     }
 

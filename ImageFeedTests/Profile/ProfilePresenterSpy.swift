@@ -30,7 +30,7 @@ final class ProfilePresenterSpy: ProfilePresenterProtocol {
         ""
     }
 
-    func didTapUnlike(photoId: String, completion: @escaping (Result<Void, Error>) -> Void) {}
+    func didTapUnlike(photoId: String, completion: @escaping (Result<Void, Error>) -> Void) { }
 
-    func didConfirmLogout() {}
+    func didConfirmLogout() { }
 }

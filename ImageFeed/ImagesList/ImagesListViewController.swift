@@ -34,6 +34,7 @@ final class ImagesListViewController: UIViewController {
         tableView.backgroundColor = UIColor(resource: .ypBlack)
         tableView.contentInsetAdjustmentBehavior = .never
         tableView.register(PhotoCell.self, forCellReuseIdentifier: PhotoCell.reuseIdentifier)
+        tableView.accessibilityIdentifier = "ImagesListTable"
         return tableView
     }()
     

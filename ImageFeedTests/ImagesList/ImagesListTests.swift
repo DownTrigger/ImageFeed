@@ -4,7 +4,6 @@ import XCTest
 final class ImagesListTests: XCTestCase {
 
     // MARK: - ViewController → Presenter
-
     @MainActor
     func testViewControllerCallsPresenterViewDidLoad() {
         // given
@@ -21,7 +20,6 @@ final class ImagesListTests: XCTestCase {
     }
 
     // MARK: - Presenter → View
-
     @MainActor
     func testPresenterCallsViewRenderOnViewDidLoad() {
         // given

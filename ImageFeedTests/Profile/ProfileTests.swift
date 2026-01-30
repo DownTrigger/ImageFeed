@@ -4,7 +4,6 @@ import XCTest
 final class ProfileTests: XCTestCase {
 
     // MARK: - ViewController → Presenter
-
     @MainActor
     func testViewControllerCallsPresenterViewDidLoad() {
         // given

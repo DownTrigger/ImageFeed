@@ -4,7 +4,6 @@ import XCTest
 final class WebViewTests: XCTestCase {
 
     // MARK: - ViewController → Presenter
-
     @MainActor
     func testViewControllerCallsPresenterViewDidLoad() {
         // given
@@ -39,7 +38,6 @@ final class WebViewTests: XCTestCase {
     }
 
     // MARK: - Progress logic
-
     @MainActor
     func testProgressVisibleWhenLessThenOne() {
         // given
@@ -69,7 +67,6 @@ final class WebViewTests: XCTestCase {
     }
 
     // MARK: - AuthHelper
-
     func testAuthHelperAuthURL() {
         // given
         let configuration = AuthConfiguration.standard

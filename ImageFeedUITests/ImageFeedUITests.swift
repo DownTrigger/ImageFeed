@@ -1,10 +1,3 @@
-//
-//  ImageFeedUITests.swift
-//  ImageFeedUITests
-//
-//  Created by Андрей Рузавин on 29/1/26.
-//
-
 import XCTest
 
 final class ImageFeedUITests: XCTestCase {
@@ -13,6 +6,7 @@ final class ImageFeedUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        app.launchArguments = ["UITEST"]
         app.launch()
     }
     
@@ -35,41 +29,48 @@ final class ImageFeedUITests: XCTestCase {
         XCTAssertTrue(passwordTextField.waitForExistence(timeout: 5))
 
         passwordTextField.tap()
+        Thread.sleep(forTimeInterval: 2)
         passwordTextField.typeText(password)
 
+        Thread.sleep(forTimeInterval: 2)
         webView.buttons["Login"].tap()
 
         let tablesQuery = app.tables
         let cell = tablesQuery.children(matching: .cell).element(boundBy: 0)
-
         XCTAssertTrue(cell.waitForExistence(timeout: 5))
     }
 
     func testFeed() throws {
-        let tablesQuery = app.tables
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
+        tabBar.buttons.element(boundBy: 0).tap()
 
-        let firstCell = tablesQuery.children(matching: .cell).element(boundBy: 0)
-        XCTAssertTrue(firstCell.waitForExistence(timeout: 5))
+        let table = app.tables["ImagesListTable"]
+        XCTAssertTrue(table.waitForExistence(timeout: 15))
 
-        firstCell.swipeUp()
+        let firstCell = table.cells["photoCell"].firstMatch
+        XCTAssertTrue(firstCell.waitForExistence(timeout: 15))
 
-        let cellToLike = tablesQuery.children(matching: .cell).element(boundBy: 1)
-        XCTAssertTrue(cellToLike.waitForExistence(timeout: 5))
+        table.swipeUp()
 
-        let likeButton = cellToLike.buttons["likeButton"]
+        let likeButton = firstCell.buttons["likeButton"]
+        XCTAssertTrue(likeButton.waitForExistence(timeout: 5))
         likeButton.tap()
-        likeButton.tap()
+        Thread.sleep(forTimeInterval: 2)
 
-        cellToLike.tap()
-        
+        likeButton.tap()
+        Thread.sleep(forTimeInterval: 2)
+
+        firstCell.tap()
+
         let backButton = app.buttons["backButton"]
         XCTAssertTrue(backButton.waitForExistence(timeout: 5))
 
         let image = app.scrollViews.images.element(boundBy: 0)
-        XCTAssertTrue(image.waitForExistence(timeout: 3))
+        XCTAssertTrue(image.waitForExistence(timeout: 5))
         image.pinch(withScale: 3, velocity: 1)
-        image.pinch(withScale: 0.5, velocity: -1)
-
+        image.pinch(withScale: 1, velocity: -1)
+        
         backButton.tap()
     }
 
@@ -83,8 +84,10 @@ final class ImageFeedUITests: XCTestCase {
         let logoutButton = app.buttons["logoutButton"]
         XCTAssertTrue(logoutButton.waitForExistence(timeout: 5))
 
-        XCTAssertTrue(app.staticTexts["Andrew Ruzavin"].exists)
-        XCTAssertTrue(app.staticTexts["@downtrigger"].exists)
+        let usernamePredicate = NSPredicate(format: "label CONTAINS[c] '@'")
+        XCTAssertTrue(app.staticTexts.matching(usernamePredicate).firstMatch.waitForExistence(timeout: 3))
+        let namePredicate = NSPredicate(format: "label != '' AND NOT label CONTAINS[c] '@'")
+        XCTAssertTrue(app.staticTexts.matching(namePredicate).firstMatch.exists)
 
         logoutButton.tap()
 

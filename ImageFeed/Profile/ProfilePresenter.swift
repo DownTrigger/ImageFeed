@@ -108,28 +108,11 @@ final class ProfilePresenter: ProfilePresenterProtocol {
     }
 
     private func didReceiveImagesUpdate() {
-        let newLikedPhotos = imagesListService.likedPhotos
-        let oldLikedPhotos = previousLikedPhotos
-        previousLikedPhotos = newLikedPhotos
-
-        let oldIDs = oldLikedPhotos.map { $0.id }
-        let newIDs = newLikedPhotos.map { $0.id }
-
-        let deleted = oldIDs.enumerated()
-            .filter { !newIDs.contains($0.element) }
-            .map { IndexPath(row: $0.offset, section: 0) }
-
-        let inserted = newIDs.enumerated()
-            .filter { !oldIDs.contains($0.element) }
-            .map { IndexPath(row: $0.offset, section: 0) }
-
+        previousLikedPhotos = imagesListService.likedPhotos
         renderFullState()
-
-        if deleted.isEmpty && inserted.isEmpty {
-            view?.reloadFavorites()
-        } else {
-            view?.applyFavoritesUpdates(deleted: deleted, inserted: inserted)
-        }
+        // Всегда перезагружаем таблицу: к моменту уведомления сервис уже обновлён,
+        // batch update (insert/delete) даёт рассинхрон с numberOfRowsInSection и краш
+        view?.reloadFavorites()
     }
 
     // MARK: - Rendering

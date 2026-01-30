@@ -88,6 +88,7 @@ final class PhotoCell: UITableViewCell {
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
+        accessibilityIdentifier = "photoCell"
         setupViews()
         setupConstraints()
         setupGradient()
