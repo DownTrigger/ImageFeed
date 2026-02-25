@@ -65,7 +65,7 @@ final class ProfileImageService {
                     )
                     
                 case .failure(let error):
-                    self.logger.error("[fetchProfileImageURL]: NetworkError \(error), username=\(username)")
+                    self.logger.error("[fetchProfileImageURL]: \(error.localizedDescription) username=\(username)")
                     completion(.failure(error))
                 }
             }

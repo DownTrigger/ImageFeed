@@ -5,7 +5,25 @@ final class ImagesListViewController: UIViewController {
     
     // MARK: - Logger
     private let logger = Logger(label: "ImagesListViewController")
-    
+
+    // MARK: - Dependencies
+    var presenter: ImagesListPresenterProtocol?
+
+    private lazy var defaultPresenter: ImagesListPresenterProtocol = ImagesListPresenter(
+        view: self,
+        imagesListService: ImagesListService.shared
+    )
+
+    private var currentPresenter: ImagesListPresenterProtocol {
+        presenter ?? defaultPresenter
+    }
+    private let dateFormatter = DateFormatterProvider.shared
+
+    // MARK: - State
+    private var state: ImagesListState = .empty
+    private var didAdjustInitialContentOffset = false
+    private var photos: [Photo] = []
+
     // MARK: - UI
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -16,30 +34,15 @@ final class ImagesListViewController: UIViewController {
         tableView.backgroundColor = UIColor(resource: .ypBlack)
         tableView.contentInsetAdjustmentBehavior = .never
         tableView.register(PhotoCell.self, forCellReuseIdentifier: PhotoCell.reuseIdentifier)
+        tableView.accessibilityIdentifier = "ImagesListTable"
         return tableView
     }()
-    
-    // MARK: - Dependencies
-    private let imagesListService = ImagesListService.shared
-    private let dateFormatter = DateFormatterProvider.shared
-    
-    // MARK: - Private Properties
-    private var didAdjustInitialContentOffset = false
-    private var photos: [Photo] = []
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableView()
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(didReceiveImagesUpdate),
-            name: ImagesListService.didChangeNotification,
-            object: nil
-        )
-        
-        imagesListService.fetchPhotosNextPage()
+        currentPresenter.viewDidLoad()
     }
     
     override func viewDidLayoutSubviews() {
@@ -69,46 +72,18 @@ final class ImagesListViewController: UIViewController {
     }
     
     // MARK: - Actions
-    @objc private func didReceiveImagesUpdate() {
-        logger.info("[didReceiveImagesUpdate]: info received images update")
-        DispatchQueue.main.async {
-            let newPhotos = self.imagesListService.photos
-            let oldCount = self.photos.count
-            let newCount = newPhotos.count
-
-            self.photos = newPhotos
-
-            if newCount > oldCount {
-                let indexPaths = (oldCount..<newCount).map {
-                    IndexPath(row: $0, section: 0)
-                }
-                self.tableView.insertRows(at: indexPaths, with: .automatic)
-            } else {
-                let visibleIndexPaths = self.tableView.indexPathsForVisibleRows ?? []
-                self.tableView.reloadRows(at: visibleIndexPaths, with: .none)
-            }
-        }
-    }
-    
     private func didTapLikeButton(from cell: PhotoCell) {
         guard let indexPath = tableView.indexPath(for: cell) else { return }
         let photo = photos[indexPath.row]
 
         cell.setLikeButtonEnabled(false)
 
-        imagesListService.changeLike(
-            photoId: photo.id,
-            shouldLike: !photo.isLiked
-        ) { [weak self] result in
+        currentPresenter.didTapLike(photoId: photo.id) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self else { return }
                 cell.setLikeButtonEnabled(true)
 
-                switch result {
-                case .success:
-                    self.photos = self.imagesListService.photos
-                    self.tableView.reloadRows(at: [indexPath], with: .none)
-                case .failure(let error):
+                if case .failure(let error) = result {
                     self.logger.error("[didTapLikeButton]: error changing like \(error.localizedDescription)")
                 }
             }
@@ -168,8 +143,7 @@ extension ImagesListViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        guard indexPath.row + 1 == photos.count else { return }
-        imagesListService.fetchPhotosNextPage()
+        currentPresenter.willDisplayRow(at: indexPath.row, totalCount: photos.count)
     }
 }
 
@@ -189,5 +163,23 @@ extension ImagesListViewController {
             guard let self, let cell else { return }
             self.didTapLikeButton(from: cell)
         }
+    }
+}
+
+// MARK: - ImagesListViewProtocol
+extension ImagesListViewController: ImagesListViewProtocol {
+    func render(state: ImagesListState) {
+        self.state = state
+        self.photos = state.photos
+    }
+
+    func insertRows(at indexPaths: [IndexPath]) {
+        tableView.insertRows(at: indexPaths, with: .automatic)
+    }
+
+    func reloadVisibleRows() {
+        let visibleIndexPaths = tableView.indexPathsForVisibleRows ?? []
+        guard !visibleIndexPaths.isEmpty else { return }
+        tableView.reloadRows(at: visibleIndexPaths, with: .none)
     }
 }

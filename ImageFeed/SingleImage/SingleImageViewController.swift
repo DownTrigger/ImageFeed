@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 import Logging
 
 final class SingleImageViewController: UIViewController {
@@ -51,6 +52,7 @@ final class SingleImageViewController: UIViewController {
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(UIImage(resource: .iconCircleLike), for: .normal)
+        button.accessibilityIdentifier = "circleLikeButton"
         
         if #available(iOS 14.0, *) {
             button.addAction(UIAction { [weak self] _ in self?.didTapLike() }, for: .touchUpInside)
@@ -154,8 +156,8 @@ final class SingleImageViewController: UIViewController {
             switch result {
             case .success(let imageResult):
                 self.image = imageResult.image
-                
-            case .failure:
+            case .failure(let error):
+                self.logger.error("[loadImage]: \(error.localizedDescription)")
                 AlertPresenter.showImageLoadAlert(on: self) { [weak self] in
                     self?.loadImage()
                 }
@@ -163,7 +165,7 @@ final class SingleImageViewController: UIViewController {
         }
     }
     
-    // MARK: - UI Setup
+    // MARK: - Setup
     private func setupUI() {
         view.backgroundColor = UIColor(resource: .ypBlack)
         setupConstraints()
@@ -173,6 +175,7 @@ final class SingleImageViewController: UIViewController {
         let backButton = UIButton(type: .system)
         backButton.setImage(UIImage(resource: .iconBackChevronWV), for: .normal)
         backButton.tintColor = UIColor(resource: .ypWhite)
+        backButton.accessibilityIdentifier = "backButton"
         
         if #available(iOS 14.0, *) {
             backButton.addAction(UIAction { [weak self] _ in self?.didTapBack() }, for: .touchUpInside)
@@ -256,10 +259,13 @@ final class SingleImageViewController: UIViewController {
     
     private func updateLikeButton() {
         guard let photo = photo else { return }
-        
+
         let image = photo.isLiked
             ? UIImage(resource: .iconCircleLikeFilled)
             : UIImage(resource: .iconCircleLike)
+        likeButton.tintColor = photo.isLiked
+            ? UIColor(resource: .ypRed)
+            : UIColor(white: 1, alpha: 128 / 255)
 
         likeButton.setImage(image, for: .normal)
     }

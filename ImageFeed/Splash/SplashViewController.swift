@@ -1,30 +1,29 @@
 import UIKit
 import Logging
 
-// MARK: - Class
 final class SplashViewController: UIViewController {
-    
-    // MARK: Logger
+
+    // MARK: - Logger
     private let logger = Logger(label: "SplashViewController")
-    
-    // MARK: Dependencies
+
+    // MARK: - Dependencies
     private let profileService = ProfileService.shared
     private let imagesListService = ImagesListService.shared
     private let tokenStorage = OAuth2TokenStorage.shared
     private let authService = OAuth2Service.shared
-    
-    // MARK: State
+
+    // MARK: - State
     private var isAuthInProgress = false
-    
-    // MARK: UI
+
+    // MARK: - UI
     private lazy var imageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(resource: .logoSplashScreen)
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
-    
-    // MARK: Lifecycle
+
+    // MARK: - Lifecycle
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
     }
@@ -53,8 +52,8 @@ final class SplashViewController: UIViewController {
         super.viewWillAppear(animated)
         setNeedsStatusBarAppearanceUpdate()
     }
-    
-    // MARK: Navigation
+
+    // MARK: - Navigation
     private func showAuthViewController() {
         let authViewController = AuthViewController()
         authViewController.delegate = self
@@ -78,8 +77,8 @@ final class SplashViewController: UIViewController {
         window.rootViewController = tabBarController
         window.makeKeyAndVisible()
     }
-    
-    // MARK: Network
+
+    // MARK: - Network
     private func fetchProfile(token: String) {
         profileService.fetchProfile(token) { [weak self] result in
             
@@ -104,8 +103,8 @@ final class SplashViewController: UIViewController {
             }
         }
     }
-    
-    // MARK: UI Helpers
+
+    // MARK: - Setup
     private func setupConstraints() {
         view.addSubview(imageView)
         
@@ -116,8 +115,7 @@ final class SplashViewController: UIViewController {
     }
 }
 
-// MARK: - Extensions
-// MARK: AuthViewControllerDelegate
+// MARK: - AuthViewControllerDelegate
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ vc: AuthViewController, didReceiveCode code: String) {
         UIBlockingProgressHUD.show()

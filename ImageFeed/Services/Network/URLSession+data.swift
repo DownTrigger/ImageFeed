@@ -12,7 +12,7 @@ enum NetworkError: Error {
 
 // MARK: - URLSession + Data
 extension URLSession {
-    
+
     // MARK: - Logger
     private static let logger = Logger(label: "URLSession")
     

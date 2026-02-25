@@ -3,25 +3,25 @@ import Logging
 
 final class ImagesListService {
 
-    // MARK: Logger
+    // MARK: - Logger
     private let logger = Logger(label: "ImagesListService")
 
-    // MARK: Singleton
+    // MARK: - Singleton
     static let shared = ImagesListService()
     private init() {}
 
-    // MARK: Dependencies
+    // MARK: - Dependencies
     private let urlSession = URLSession.shared
     private let tokenStorage = OAuth2TokenStorage.shared
 
-    // MARK: Public State
+    // MARK: - Public State
     private(set) var photos: [Photo] = []
     private(set) var likedPhotos: [Photo] = []
 
-    // MARK: Notifications
+    // MARK: - Notifications
     static let didChangeNotification = Notification.Name("ImagesListServiceDidChange")
 
-    // MARK: Private State
+    // MARK: - Private State
     private var lastLoadedPage: Int?
     private var isLoading = false
     private var likedPhotoIDs: Set<String> {
@@ -30,7 +30,7 @@ final class ImagesListService {
     private var photoTask: URLSessionTask?
     private var likeTask: URLSessionTask?
 
-    // MARK: Public API
+    // MARK: - Public API
     func fetchPhotosNextPage() {
         assert(Thread.isMainThread)
 
@@ -43,7 +43,7 @@ final class ImagesListService {
         let nextPage = (lastLoadedPage ?? 0) + 1
 
         guard let request = makePhotosRequest(page: nextPage) else {
-            logger.error("fetchPhotosNextPage: invalidRequest page=\(nextPage)")
+            logger.error("[fetchPhotosNextPage]: invalidRequest page=\(nextPage)")
             isLoading = false
             return
         }
@@ -76,10 +76,7 @@ final class ImagesListService {
                 )
 
             case .failure(let error):
-                if let decodingError = error as? DecodingError {
-                    self.logger.error("fetchPhotosNextPage: decodingError page=\(nextPage) error=\(decodingError)")
-                }
-                self.logger.error("fetchPhotosNextPage: networkError page=\(nextPage) error=\(error)")
+                self.logger.error("[fetchPhotosNextPage]: \(error.localizedDescription) page=\(nextPage)")
             }
         }
 
@@ -93,7 +90,7 @@ final class ImagesListService {
     ) {
         guard let token = tokenStorage.token else {
             let error = NSError(domain: "AuthError", code: 401)
-            logger.error("fetchLikedPhotos: authError username=\(username)")
+            logger.error("[fetchLikedPhotos]: authError username=\(username)")
             completion(.failure(error))
             return
         }
@@ -111,40 +108,36 @@ final class ImagesListService {
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<[PhotoResult], Error>) in
             guard let self else { return }
 
-                switch result {
-                case .success(let photoResults):
-                    let photos = photoResults.compactMap { result -> Photo? in
-                        Photo(
-                            id: result.id,
-                            size: CGSize(width: result.width, height: result.height),
-                            createdAt: result.createdAt,
-                            description: result.description,
-                            regularImageURL: result.urls.regular,
-                            largeImageURL: result.urls.full,
-                            isLiked: true
-                        )
-                    }
+            switch result {
+            case .success(let photoResults):
+                let photos = photoResults.compactMap { result -> Photo? in
+                    Photo(
+                        id: result.id,
+                        size: CGSize(width: result.width, height: result.height),
+                        createdAt: result.createdAt,
+                        description: result.description,
+                        regularImageURL: result.urls.regular,
+                        largeImageURL: result.urls.full,
+                        isLiked: true
+                    )
+                }
 
+                DispatchQueue.main.async {
                     self.likedPhotos = photos
-                    
                     self.photos = self.photos.map { photo in
                         photo.withLiked(self.likedPhotoIDs.contains(photo.id))
                     }
-
                     NotificationCenter.default.post(
                         name: Self.didChangeNotification,
                         object: self
                     )
-                    
                     completion(.success(photos))
-
-                case .failure(let error):
-                    if let decodingError = error as? DecodingError {
-                        self.logger.error("fetchLikedPhotos: decodingError username=\(username) error=\(decodingError)")
-                    }
-                    self.logger.error("fetchLikedPhotos: networkError username=\(username) error=\(error)")
-                    completion(.failure(error))
                 }
+
+            case .failure(let error):
+                self.logger.error("[fetchLikedPhotos]: \(error.localizedDescription) username=\(username)")
+                completion(.failure(error))
+            }
         }
 
         task.resume()
@@ -162,14 +155,14 @@ final class ImagesListService {
 
         guard let token = tokenStorage.token else {
             let error = NSError(domain: "AuthError", code: 401)
-            logger.error("changeLike: authError photoId=\(photoId)")
+            logger.error("[changeLike]: authError photoId=\(photoId)")
             completion(.failure(error))
             return
         }
 
         guard let request = makeLikeRequest(photoId: photoId, shouldLike: shouldLike, token: token) else {
             let error = NSError(domain: "InvalidRequest", code: 0)
-            logger.error("changeLike: invalidRequest photoId=\(photoId)")
+            logger.error("[changeLike]: invalidRequest photoId=\(photoId)")
             completion(.failure(error))
             return
         }
@@ -179,45 +172,43 @@ final class ImagesListService {
 
             switch result {
             case .success:
-                if let index = self.photos.firstIndex(where: { $0.id == photoId }) {
-                    let photo = self.photos[index]
+                DispatchQueue.main.async {
+                    if let index = self.photos.firstIndex(where: { $0.id == photoId }) {
+                        let photo = self.photos[index]
 
-                    let newPhoto = Photo(
-                        id: photo.id,
-                        size: photo.size,
-                        createdAt: photo.createdAt,
-                        description: photo.description,
-                        regularImageURL: photo.regularImageURL,
-                        largeImageURL: photo.largeImageURL,
-                        isLiked: shouldLike
-                    )
+                        let newPhoto = Photo(
+                            id: photo.id,
+                            size: photo.size,
+                            createdAt: photo.createdAt,
+                            description: photo.description,
+                            regularImageURL: photo.regularImageURL,
+                            largeImageURL: photo.largeImageURL,
+                            isLiked: shouldLike
+                        )
 
-                    self.photos[index] = newPhoto
+                        self.photos[index] = newPhoto
 
-                    if shouldLike {
-                        if let existing = self.likedPhotos.firstIndex(where: { $0.id == photoId }) {
-                            self.likedPhotos[existing] = self.likedPhotos[existing].withLiked(true)
-                        } else if let photoInFeed = self.photos.first(where: { $0.id == photoId }) {
-                            let liked = photoInFeed.withLiked(true)
-                            self.likedPhotos.insert(liked, at: 0)
+                        if shouldLike {
+                            if let existing = self.likedPhotos.firstIndex(where: { $0.id == photoId }) {
+                                self.likedPhotos[existing] = self.likedPhotos[existing].withLiked(true)
+                            } else if let photoInFeed = self.photos.first(where: { $0.id == photoId }) {
+                                let liked = photoInFeed.withLiked(true)
+                                self.likedPhotos.insert(liked, at: 0)
+                            }
+                        } else {
+                            self.likedPhotos.removeAll { $0.id == photoId }
                         }
-                    } else {
-                        self.likedPhotos.removeAll { $0.id == photoId }
                     }
+
+                    NotificationCenter.default.post(
+                        name: Self.didChangeNotification,
+                        object: self
+                    )
+                    completion(.success(()))
                 }
-
-                NotificationCenter.default.post(
-                    name: Self.didChangeNotification,
-                    object: self
-                )
-
-                completion(.success(()))
 
             case .failure(let error):
-                if let decodingError = error as? DecodingError {
-                    self.logger.error("changeLike: decodingError photoId=\(photoId) error=\(decodingError)")
-                }
-                self.logger.error("changeLike: networkError photoId=\(photoId) error=\(error)")
+                self.logger.error("[changeLike]: \(error.localizedDescription) photoId=\(photoId)")
                 completion(.failure(error))
             }
 
@@ -228,7 +219,7 @@ final class ImagesListService {
         task.resume()
     }
 
-    // MARK: Requests
+    // MARK: - Requests
     private func makePhotosRequest(page: Int) -> URLRequest? {
         guard var components = URLComponents(string: "https://api.unsplash.com/photos") else {
             return nil
@@ -263,8 +254,7 @@ final class ImagesListService {
     }
 }
 
-// MARK: - Extensions
-// MARK: Cleanup
+// MARK: - Cleanup
 extension ImagesListService {
     func cleanImagesList() {
         photos.removeAll()
